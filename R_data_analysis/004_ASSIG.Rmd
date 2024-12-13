@@ -1,0 +1,162 @@
+---
+title: "assignment 4"
+author: "wang yuhang"
+date: "2024-10-25"
+output:
+  html_document:
+    toc: true
+    number_sections: true
+    df_print: paged
+  word_document:
+    toc: true
+    number_sections: true
+  pdf_document:
+    toc: true
+editor_options: 
+  chunk_output_type: inline
+  markdown: 
+    wrap: 72
+---
+
+# Assignment 04
+
+Create the graph shown below using the igraph R package or the tidygraph + ggraph packages.
+
+![](images/p1.png){width="327"}
+
+```{r}
+library("igraph")
+library("ggraph")
+```
+
+## igraph
+
+```{r}
+#by make_graph and plot
+G1 <- make_graph(
+  ~ "Mi"-+"Zi", 
+    "Mi"-+"Ci", 
+    "Mi"-+"Mi+1", 
+    "Ti"-+"Ci",
+    "Ti"-+"Zi",
+    "Ti"-+"Wi",
+    "Ti"-+"Li",
+    "Zi"-+"Li",
+    "Hi"-+"Ci",
+    "Hi"-+"Zi",
+    "Hi"-+"Li",
+    "Hi"-+"Wi",
+    "Wi"-+"Xi",
+    "Wi"-+"Yi",
+    "Xi"-+"Yi",
+    "Yi"-+"Mi+1",
+    "Li"-+"Xi",
+    "Ci"-+"Xi", 
+    "Ci"-+"Yi")
+```
+
+```{r}
+G1
+V(G1)
+```
+
+```{r}
+E(G1)$curved <- c(0,-0.2,0,0,-0.3,
+                  0,0,-0.2,0.3,0,
+                  0,0.5,0,0,0,
+                  0.6,0,0,-0.3)
+V(G1)$color <- c("white","white","white","yellow","white",
+                  "orange","white","white","orange","orange")
+
+#Setting my layout for every node by the specific location(x,y)
+my_layout <- matrix(    c(0, 20,   
+                          6, 16,   
+                          0, 0,   
+                          35, 20,   
+                          2, 10,   
+                          25, 16,
+                          17, 10,
+                          7, 5,
+                          25, 10,
+                          25, 0),  
+                        ncol = 2, byrow = TRUE)
+
+plot(G1,
+     layout = my_layout, 
+     vertex.size = 28,                 
+     vertex.label.color = "black",
+     vertex.label.cex = 0.7,
+     edge.color = "black",              
+     edge.width = 1.5,
+     edge.arrow.size = 0.5)
+```
+
+## ggraph
+
+```{r}
+#by ggraph
+edges2 <- matrix(c(
+    "Mi", "Zi", 
+    "Mi", "Ci", 
+    "Mi", "Mi+1", 
+    "Ti", "Ci",
+    "Ti", "Zi",
+    "Ti", "Wi",
+    "Ti", "Li",
+    "Zi", "Li",
+    "Hi", "Ci",
+    "Hi", "Zi",
+    "Hi", "Li",
+    "Hi", "Wi",
+    "Wi", "Xi",
+    "Wi", "Yi",
+    "Xi", "Yi",
+    "Yi", "Mi+1",
+    "Li", "Xi",
+    "Ci", "Xi", 
+    "Ci", "Yi"), byrow = TRUE, ncol = 2)
+```
+
+```{r}
+G2 <- graph_from_edgelist(edges2, directed = TRUE)
+G2
+V(G2)
+```
+
+```{r}
+my_layout <- matrix(    c(0, 28,   
+                          4, 20,   
+                          0, 0,   
+                          24, 28,   
+                          2, 13,   
+                          18, 20,
+                          13, 13,
+                          5, 6,
+                          18, 13,
+                          18, 0),  
+                        ncol = 2, byrow = TRUE)
+ggraph(G2, layout = my_layout) +        
+  geom_edge_arc( strength = 
+                c(0,-0.1,0,-0.15,0,
+                  0.2,0,0,0,0,
+                  0,0.35,0,0.3,0,
+                  -0.15,0,-0.2,0),
+                 arrow = arrow(length = unit(3, 'mm'),
+                               type = "open"),
+                 end_cap = circle(4, 'mm'),            
+                 color = "black") +                      
+  geom_node_point(size = 9.5, 
+                  color = "black",
+                  fill = c(
+    "white","white","white","yellow","white",
+  "orange","white","white","orange","orange"), 
+                  shape = 21,       
+                  stroke = 1.2) +   
+  geom_node_text(aes(label = name), 
+                 color = "black",
+                 vjust = 0.5, 
+                 hjust = 0.5, 
+                 size = 3) +
+  theme_void()+                    
+  xlim(-10,40)+ylim(-10,30)         #    I want to make the graph as center
+```

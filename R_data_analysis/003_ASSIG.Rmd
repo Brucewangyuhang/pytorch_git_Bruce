@@ -1,0 +1,351 @@
+---
+title: "assignment 3"
+author: "wang yuhang"
+date: "2024-10-14"
+output:
+  pdf_document:
+    toc: true
+  html_document:
+    toc: true
+    number_sections: true
+    df_print: paged
+  word_document:
+    toc: true
+    number_sections: true
+editor_options: 
+  chunk_output_type: inline
+---
+# Assignment 03
+
+The diamonds case study
+This case study is dataframe with rows and variables (sample space within brackets):
+
+  - price: price in US dollars ($326–$18,823)
+  
+  - arat: weight of the diamond (0.2–5.01)
+  
+  - cut: quality of the cut (Fair, Good, Very Good, Premium, Ideal)
+  
+  - color: diamond colour, from D (best) to J (worst)
+  
+  - clarity: a measurement of how clear the diamond is (I1 (worst), SI2, SI1, VS2, VS1, VVS2, VVS1, IF (best))
+  
+  - x: length in mm (0–10.74)
+  
+  - y: width in mm (0–58.9)
+  
+  - z: depth in mm (0–31.8)
+  
+  - depth: total depth percentage = z / mean(x, y) = 2 * z / (x + y) thus (43–79)
+  
+  - table: width of top of diamond relative to widest point (43–95)
+  
+After downloading from myAriel the diamondsDF.RData file into the working directory, load this dataset into the workspace and obtain the subdataframe of complete cases: call this object wkDF.
+
+
+
+## E00
+
+Consider the variable price in the diamonds case study and create a working DataFrame called wkDF made by complete cases. Build a quantile-quantile plot with a red reference line.
+
+```{r}
+
+getwd()
+dir()
+
+load(file = "data/diamondsDF.RData")
+
+wkDF <- diamondsDF
+
+dim(wkDF)
+
+names(wkDF)
+
+head(wkDF)
+
+tail(wkDF)
+
+str(wkDF)
+```
+```{r}
+qqnorm(wkDF$price)
+qqline(wkDF$price,col=2,lwd=3)
+```
+
+## E01
+
+Do the same as point (1) after taking the natural logarithm of price.
+
+```{r}
+
+log_price <- log(wkDF$price)
+
+qqnorm(log_price)
+qqline(log_price,col=2,lwd=3)
+```
+
+## E02
+
+Calculate the ecdf of the variable in (1) after standardization of price (new variable priceS) and put the reference Normal cdf (parameters and ) as red line in the same plot. 
+
+```{r}
+
+priceS <- scale(log_price)
+ecdf_s_price <- ecdf(priceS)
+plot(ecdf_s_price,
+         xlab="standardization of price",
+         ylab="cumulative density",
+         lwd = 2)
+
+x <- seq(-4,4,length=1000)
+y <- pnorm(x,0,1)
+lines(x,y,col="red",type = "l",lwd = 2)
+#Is the family of normal pdfs suited to our case study from the above plots?
+#yes, because the line of the ecdf of the variable priceS is very similar with standard normal distribution.
+```
+
+## E03
+
+Now split the complete cases of diamondsDF dataframe according to the R factors cut and color; allow the deletion of empty groups. Call the resulting R object wk_split. How many groups are expected and how many appear in the result?
+
+```{r}
+
+
+print("How many groups are expected?")
+length(levels(wkDF$cut))*length(levels(wkDF$color))
+
+# using complete.cases() to search without empty row
+complete_diamonds_wkDF <- wkDF[complete.cases(wkDF), ]
+
+# accordance with cut and color to split data set
+wk_split <- split(complete_diamonds_wkDF, list(complete_diamonds_wkDF$cut, complete_diamonds_wkDF$color), drop = TRUE)
+
+#showing the result
+print("How many appear in the result?")
+print(length(wk_split))
+
+
+
+```
+```{r}
+#Print the vector of strings describing the cartesian product of the two sets of labels (for cut and color) using outer.
+X <- (levels(complete_diamonds_wkDF$cut))
+Y <- (levels(complete_diamonds_wkDF$color))
+output_of_group_name <- outer(X, Y, FUN = paste)
+output_of_group_name
+
+```
+
+## E04
+
+Put the qqplot-qqline output of the first 9 groups into the same graphical window using wk_split for the standardized variable priceS within each group.
+
+```{r}
+ 
+wk_split_1_9 <- wk_split[1:9]
+for (i in 1:9) {
+    #assign function can assign the value to the key name,just use <- or = maybe bring error
+    assign(paste("wk_split_1_9_s_",i,sep=""),scale(wk_split_1_9[[i]]$price))
+    
+}
+#mfrow means setting the window's scale as n*m grids.
+par(mfrow = c(3, 3))
+qqnorm(wk_split_1_9_s_1,main = "Normal QQ Plot 1",xlim=c(-4,4))
+qqline(wk_split_1_9_s_1,col="red")
+qqnorm(wk_split_1_9_s_2,main = "Normal QQ Plot 2",xlim=c(-4,4))
+qqline(wk_split_1_9_s_2,col="red")
+qqnorm(wk_split_1_9_s_3,main = "Normal QQ Plot 3",xlim=c(-4,4))
+qqline(wk_split_1_9_s_3,col="red")
+qqnorm(wk_split_1_9_s_4,main = "Normal QQ Plot 4",xlim=c(-4,4))
+qqline(wk_split_1_9_s_4,col="red")
+qqnorm(wk_split_1_9_s_5,main = "Normal QQ Plot 5",xlim=c(-4,4))
+qqline(wk_split_1_9_s_5,col="red")
+qqnorm(wk_split_1_9_s_6,main = "Normal QQ Plot 6",xlim=c(-4,4))
+qqline(wk_split_1_9_s_6,col="red")
+qqnorm(wk_split_1_9_s_7,main = "Normal QQ Plot 7",xlim=c(-4,4))
+qqline(wk_split_1_9_s_7,col="red")
+qqnorm(wk_split_1_9_s_8,main = "Normal QQ Plot 8",xlim=c(-4,4))
+qqline(wk_split_1_9_s_8,col="red")
+qqnorm(wk_split_1_9_s_9,main = "Normal QQ Plot 9",xlim=c(-4,4))
+qqline(wk_split_1_9_s_9,col="red")
+```
+
+
+## E05
+
+Repeat point (5) for variable priceS (standardized within groups) but with histograms of relative frequency instead of qqplots. Use the same range for all the nine plots on the horizontal axis. The main title on top of each histogram is the group index 1,2,...
+```{r}
+
+library(ggplot2)
+library(patchwork)
+
+p1 <- ggplot(data.frame(value = wk_split_1_9_s_1), aes(x = value, y = after_stat(density))) +
+      geom_histogram(binwidth = 0.2, fill = "orange", color = "black") +
+      ggtitle("the group index 1") +
+      theme_bw()+
+      xlim(-2,4)+
+      ylim(0,0.8)+
+      theme(
+        plot.title = element_text(hjust = 0.5))#theme could set the area of the title
+
+p2 <- ggplot(data.frame(value =wk_split_1_9_s_2), aes(x = value, y = after_stat(density))) +
+      geom_histogram(binwidth = 0.2, fill = "blue", color = "black") +
+      ggtitle("the group index 2") +
+      theme_bw()+
+      xlim(-2,4)+
+      ylim(0,0.8)+
+      theme(
+        plot.title = element_text(hjust = 0.5))#theme could set the area of the title
+
+p3 <- ggplot(data.frame(value=wk_split_1_9_s_3), aes(x = value, y = after_stat(density))) +
+      geom_histogram(binwidth = 0.2, fill = "green", color = "black") +
+      ggtitle("the group index 3") +
+      theme_bw()+
+      xlim(-2,4)+
+      ylim(0,0.8)+
+      theme(
+        plot.title = element_text(hjust = 0.5))#theme could set the area of the title
+p4 <- ggplot(data.frame(value=wk_split_1_9_s_4), aes(x = value, y = after_stat(density))) +
+      geom_histogram(binwidth = 0.2, fill = "orange", color = "black") +
+      ggtitle("the group index 4") +
+      theme_bw()+
+      xlim(-2,4)+
+  ylim(0,0.8)+
+      theme(
+        plot.title = element_text(hjust = 0.5))#theme could set the area of the title
+p5 <- ggplot(data.frame(value=wk_split_1_9_s_5), aes(x = value, y = after_stat(density))) +
+      geom_histogram(binwidth = 0.2, fill = "blue", color = "black") +
+      ggtitle("the group index 5") +
+      theme_bw()+
+      xlim(-2,4)+
+  ylim(0,1)+
+      theme(
+        plot.title = element_text(hjust = 0.5))#theme could set the area of the title
+
+p6 <- ggplot(data.frame(value=wk_split_1_9_s_6), aes(x = value, y = after_stat(density))) +
+      geom_histogram(binwidth = 0.2, fill = "green", color = "black") +
+      ggtitle("the group index 6") +
+      theme_bw()+
+      xlim(-2,4)+
+  ylim(0,0.8)+
+      theme(
+        plot.title = element_text(hjust = 0.5))#theme could set the area of the title
+
+p7 <- ggplot(data.frame(value=wk_split_1_9_s_7), aes(x = value, y = after_stat(density))) +
+      geom_histogram(binwidth = 0.2, fill = "orange", color = "black") +
+      ggtitle("the group index 7") +
+      theme_bw()+
+      xlim(-2,4)+
+  ylim(0,0.8)+
+      theme(
+        plot.title = element_text(hjust = 0.5))#theme could set the area of the title
+p8 <- ggplot(data.frame(value=wk_split_1_9_s_8), aes(x = value, y = after_stat(density))) +
+      geom_histogram(binwidth = 0.2, fill = "blue", color = "black") +
+      ggtitle("the group index 8") +
+      theme_bw()+
+      xlim(-2,4)+
+  ylim(0,0.8)+
+      theme(
+        plot.title = element_text(hjust = 0.5))#theme could set the area of the title
+
+p9 <- ggplot(data.frame(value=wk_split_1_9_s_9), aes(x = value, y = after_stat(density))) +
+      geom_histogram(binwidth = 0.2, fill = "green", color = "black") +
+      ggtitle("the group index 9") +
+      theme_bw()+
+      xlim(-2,4)+
+  ylim(0,1.25)+
+      theme(
+        plot.title = element_text(hjust = 0.5))#theme could set the area of the title
+
+
+((p1 | p2 | p3) / (p4 | p5 | p6) / (p7 | p8 | p9)) 
+#there are some warnings because we use the same of the range of x axis, 
+#so some stray data(I just say it or range-out data) will lost.
+```
+
+## E06
+
+Calculate mean and standard deviation of price for each group defined above using the two factors cut and color. Then, calculate the endpoints of intervals defined by mean standard deviation. Calculate the minimum of left endpoints and the maximum of right endpoints: call it xlim_scale.
+
+```{r}
+#Calculate all 35 groups' mean and standard deviation.
+wk_split_1_35 <- wk_split[1:35]
+for (i in 1:35) {
+    #assign function can assign the value to the key name,just use <- or = maybe bring error
+    assign(paste("wk_split_1_35_s_",i,sep=""),scale(wk_split_1_35[[i]]$price))
+    
+}
+#I want to save the sd and mean as a dataframe maybe it is convenient for next steps.
+sd_meanData <- data.frame(groupName=character(), sdValue=numeric(), meanValue=numeric())
+for (i in 1:35) {
+    sd_for_wk_split = assign(paste("wk_split_1_35_sd_",i,sep=""),sd(wk_split_1_35[[i]]$price))
+    mean_for_wk_split = assign(paste("wk_split_1_35_mean_",i,sep=""),mean(wk_split_1_35[[i]]$price))
+    #I create a new line and add it to the old dataframe as rbind
+    new_row <- data.frame(groupName=output_of_group_name[i], sdValue=sd_for_wk_split, meanValue=mean_for_wk_split)
+    sd_meanData <- rbind(sd_meanData, new_row)
+    cat(i," group's ","sd: ", sd_for_wk_split,"mean: ",mean_for_wk_split,"\n")
+    
+}
+
+
+```
+```{r}
+#we want to calculate the endpoints, I consider the left endpoint is mean-sd and the right endpoint is mean+sd.
+
+sd_meanData$left_endpoint <- sd_meanData$meanValue - sd_meanData$sdValue
+sd_meanData$right_endpoint <- sd_meanData$meanValue + sd_meanData$sdValue
+sd_meanData$xlim_scale <- paste("(",sd_meanData$left_endpoint,sd_meanData$right_endpoint,")")
+sd_meanData
+sd_meanData$xlim_scale
+```
+
+## E07
+
+Plot an horizontal segment with endpoints defined by mean standard deviation of price for each subgroup cut-color defined above, without scaling the raw data. Add a point on each segment to represent the mean value, red color, square symbol
+
+```{r}
+
+ggplot(sd_meanData, aes(x = left_endpoint, y = 1, xend = right_endpoint, yend = 1)) +
+  geom_segment(color = "green", size = 1) +  
+  labs(title = "Horizontal Segments", x = "X Axis", y = "Y Axis")+
+  theme_bw()+
+  geom_point(aes((left_endpoint+right_endpoint)/2), 
+             colour = "red", 
+             fill = "red", 
+             shape=22, 
+             size=3)+
+  facet_wrap(facets = vars(groupName),
+             ncol = 5,
+             nrow = 7)
+```
+
+## E08
+
+Add to the plot in figure 8 a vertical line passing through the marginal mean of price, color blue, double thickness. Put small black points at the end of each segment.
+
+```{r}
+#the marginal mean of price is different with the mean, the former one always has some conditional restriction, such as we devide 35 subgroups every group all has their own marginal mean.
+ggplot(sd_meanData, aes(x = left_endpoint, y = 1, xend = right_endpoint, yend = 1)) +
+  geom_segment(color = "green", size = 1) +  
+  labs(title = "Horizontal Segments", x = "X Axis", y = "Y Axis")+
+  theme_bw()+
+  geom_point(aes((left_endpoint+right_endpoint)/2), 
+             colour = "red", 
+             fill = "red", 
+             shape=22, 
+             size=3)+
+  geom_point(aes(right_endpoint), 
+             colour = "black", 
+             fill = "black", 
+             shape=21, 
+             size=1.5)+
+  geom_vline(aes(xintercept=(left_endpoint+right_endpoint)/2),
+             color = "blue",
+             size = 1)+
+  facet_wrap(facets = vars(groupName),
+             ncol = 5,
+             nrow = 7)
+
+```
+
+

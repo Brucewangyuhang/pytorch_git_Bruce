@@ -1,0 +1,264 @@
+---
+title: "assignment 1"
+author: "wang yuhang"
+date: "2024-10-04"
+output:
+  html_document:
+    toc: true
+    number_sections: true
+    df_print: paged
+  pdf_document:
+    toc: true
+  word_document:
+    toc: true
+    number_sections: true
+---
+# Assignment 01
+
+The **diamonds** case study
+This case study is dataframe with rows and variables (sample space within brackets):
+
+  - price: price in US dollars ($326–$18,823)
+  
+  - arat: weight of the diamond (0.2–5.01)
+  
+  - cut: quality of the cut (Fair, Good, Very Good, Premium, Ideal)
+  
+  - color: diamond colour, from D (best) to J (worst)
+  
+  - clarity: a measurement of how clear the diamond is (I1 (worst), SI2, SI1, VS2, VS1, VVS2, VVS1, IF (best))
+  
+  - x: length in mm (0–10.74)
+  
+  - y: width in mm (0–58.9)
+  
+  - z: depth in mm (0–31.8)
+  
+  - depth: total depth percentage = z / mean(x, y) = 2 * z / (x + y) thus (43–79)
+  
+  - table: width of top of diamond relative to widest point (43–95)
+  
+After downloading from myAriel the diamondsDF.RData file into the working directory, load this dataset into the workspace.
+
+
+## Get dataset
+```{r}
+# which is the working directory?
+getwd()
+dir()
+
+load(file = "data/diamondsDF.RData")
+
+dim(diamondsDF)
+
+names(diamondsDF)
+
+head(diamondsDF)
+
+tail(diamondsDF)
+
+str(diamondsDF)
+```
+## Univariate frequency distributions
+
+For distinct values of a variable , consider:
+
+- Absolute frequency of value
+
+- Relative frequency
+
+- Cumulative absolute frequency
+
+- Cumulative relative frequency
+
+- Mode
+
+Calculate the above statistics for the following variables:
+
+- **cut**
+
+- **color**
+
+- **clarity**
+
+```{r}
+cat("Absolute frequency of cut\n")
+ferqCut <- xtabs(~ cut,
+                data = diamondsDF)
+
+ferqCut
+
+
+cat("Absolute frequency of color\n")
+ferqColor <- xtabs(~ color,
+                data = diamondsDF)
+
+ferqColor
+
+cat("Absolute frequency of clarity\n")
+
+ferqClarity <- xtabs(~ clarity,
+                data = diamondsDF)
+
+ferqClarity
+
+```
+```{r}
+#Relative frequency
+cat("Relative frequency of cut\n")
+round(100*(ferqCut/ sum(ferqCut)),3)
+
+#Relative frequency
+cat("Relative frequency of color\n")
+round(100*(ferqColor/ sum(ferqColor)),3)
+
+#Relative frequency
+cat("Relative frequency of clarity\n")
+round(100*(ferqClarity/ sum(ferqClarity)),3)
+```
+
+```{r}
+#Cumulative absolute frequency
+cat("Cumulative absolute frequency of cut\n")
+ferqACut <- cumsum(ferqCut)
+ferqACut
+
+#Cumulative absolute frequency
+cat("Cumulative absolute frequency of color\n")
+ferqAColor <- cumsum(ferqColor)
+ferqAColor
+
+#Cumulative absolute frequency
+cat("Cumulative absolute frequency of clarity\n")
+ferqAClarity <- cumsum(ferqClarity)
+ferqAClarity
+
+```
+```{r}
+#Cumulative relative frequency
+cat("Cumulative relative frequency of cut\n")
+ferqRelCut <- cumsum(ferqCut)/sum(ferqCut)
+ferqRelCut
+
+
+#Cumulative relative frequency
+cat("Cumulative relative frequency of color\n")
+ferqRelColor <- cumsum(ferqColor)/sum(ferqColor)
+ferqRelColor
+
+
+#Cumulative relative frequency
+cat("Cumulative relative frequency of clarity\n")
+ferqRelClarity <- cumsum(ferqClarity)/sum(ferqClarity)
+ferqRelClarity
+
+
+```
+
+```{r}
+cat("mode-Cut\n")
+freqRel <- ferqCut/ sum(ferqCut)
+res <- which(freqRel == max(freqRel))
+
+c(max_frequency = max(freqRel),
+  modal_value =names(res),
+  position = as.numeric(res))
+
+cat("mode-Color\n")
+freqRel <- ferqColor/ sum(ferqColor)
+res2 <- which(freqRel == max(freqRel))
+
+c(max_frequency = max(freqRel),
+  modal_value =names(res2),
+  position = as.numeric(res2))
+
+cat("mode-Clarity\n")
+freqRel <- ferqClarity/ sum(ferqClarity)
+res3 <- which(freqRel == max(freqRel))
+
+c(max_frequency = max(freqRel),
+  modal_value =names(res3),
+  position = as.numeric(res3))
+```
+## Quantitative variables
+Now consider these summaries:
+
+- Mean
+
+- Median 
+
+- Maximum 
+
+- Minimum 
+
+- Range = with (distinct values)
+
+- Inter-Quartile Range
+
+- Quantile
+
+- Variance
+
+- Standard deviation
+- Coefficient of variation 
+
+Calculate the above statistics for the following variables:
+
+- **price**
+- **carat**
+
+
+```{r}
+cat("price mean\n")
+mean(diamondsDF$price, na.rm = TRUE)
+cat("price median\n")
+median(diamondsDF$price, na.rm = TRUE)
+cat("price var\n")
+var(diamondsDF$price, na.rm = TRUE)
+cat("price sd\n")
+sd(diamondsDF$price, na.rm = TRUE)
+cat("price range\n")
+range(diamondsDF$price, na.rm = TRUE)
+
+cat("carat mean\n")
+mean(diamondsDF$carat, na.rm = TRUE)
+cat("carat median\n")
+median(diamondsDF$carat, na.rm = TRUE)
+cat("carat var\n")
+var(diamondsDF$carat, na.rm = TRUE)
+cat("carat sd\n")
+sd(diamondsDF$carat, na.rm = TRUE)
+cat("carat range\n")
+range(diamondsDF$carat, na.rm = TRUE)
+
+```
+```{r}
+#Q3-Q1
+cat("price IQR\n")
+IQR(diamondsDF$price, na.rm = TRUE)
+
+quantile(diamondsDF$price, prob=0.25, na.rm = TRUE)
+quantile(diamondsDF$price, prob=0.75, na.rm = TRUE)
+
+#Q3-Q1
+cat("carat IQR\n")
+IQR(diamondsDF$carat, na.rm = TRUE)
+
+quantile(diamondsDF$carat, prob=0.25, na.rm = TRUE)
+quantile(diamondsDF$carat, prob=0.75, na.rm = TRUE)
+```
+```{r}
+#Coefficient of Variation--the bigger the less stable
+cat("price Coefficient of Variation\n")
+100*sd(diamondsDF$price, na.rm = TRUE)/ mean(diamondsDF$price, na.rm = TRUE)
+
+#Coefficient of Variation--the bigger the less stable
+cat("carat Coefficient of Variation\n")
+100*sd(diamondsDF$carat, na.rm = TRUE)/ mean(diamondsDF$carat, na.rm = TRUE)
+```
+```{r}
+cat("price summary\n")
+summary(diamondsDF$price)
+cat("carat summary\n")
+summary(diamondsDF$carat)
+```

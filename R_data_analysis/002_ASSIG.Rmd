@@ -1,0 +1,292 @@
+---
+title: "assignment 2"
+author: "wang yuhang"
+date: "2024-10-04"
+output:
+  word_document:
+    toc: true
+    number_sections: true
+  pdf_document:
+    toc: true
+  html_document:
+    toc: true
+    number_sections: true
+    df_print: paged
+---
+
+# Assignment 02
+
+The diamonds case study
+This case study is dataframe with rows and variables (sample space within brackets):
+
+  - price: price in US dollars ($326–$18,823)
+  
+  - arat: weight of the diamond (0.2–5.01)
+  
+  - cut: quality of the cut (Fair, Good, Very Good, Premium, Ideal)
+  
+  - color: diamond colour, from D (best) to J (worst)
+  
+  - clarity: a measurement of how clear the diamond is (I1 (worst), SI2, SI1, VS2, VS1, VVS2, VVS1, IF (best))
+  
+  - x: length in mm (0–10.74)
+  
+  - y: width in mm (0–58.9)
+  
+  - z: depth in mm (0–31.8)
+  
+  - depth: total depth percentage = z / mean(x, y) = 2 * z / (x + y) thus (43–79)
+  
+  - table: width of top of diamond relative to widest point (43–95)
+  
+After downloading from myAriel the diamondsDF.RData file into the working directory, load this dataset into the workspace.
+
+## E00
+
+Calculate the joint frequency distribution for the three variables cut, color and clarity
+Transform such R object into a flat table
+```{r}
+getwd()
+dir()
+load("data/diamondsDF.RData")
+diamondsDF_new <- diamondsDF
+head(diamondsDF_new)
+```
+```{r}
+#joint frequency distribution
+count_mat <- as.matrix(
+ftable(xtabs(~ cut+color+clarity,
+      data = diamondsDF_new)))
+count_mat
+```
+
+## E01
+
+Calculate the percentage for values of clarity conditional on cut=Good and color=D
+```{r}
+specific_num <- count_mat["Good_D", ]
+sum_num <- count_mat[ , ]
+
+cat("the percentage for values of clarity conditional on cut=Good and color=D\n")
+round(100*sum(specific_num)/sum(sum_num),3)
+```
+
+## E02
+
+Build a barplot for such percentage values with a box around it, and where bars are filled by 12 lines per inch with slope of lines 45 degrees; the main title is “Distribution of clarity given cut=Good and color=D”
+```{r}
+
+specific_num <- count_mat["Good_D", ]
+specific_num
+
+barplot(specific_num,
+        ylim = c(0,250),
+        xlim = c(0,10),
+        col = grDevices::palette.colors(9,"Polychrome 36"),
+        ylab = "Numaber of Good_D",
+        xlab = "types of clarity",
+        legend.text = "Good_D",
+        args.legend = list(x="right"),
+        angle = 45,
+        density = 12,
+        main = "Distribution of clarity given cut=Good and color=D "
+)
+box()
+```
+
+## E03
+
+Find the mode of this distribution
+```{r}
+#mode
+freqRel <- specific_num/ sum(specific_num)
+res_new <- which(freqRel == max(freqRel))
+
+c(max_frequency = max(freqRel),
+  modal_value =names(res_new),
+  position = as.numeric(res_new))
+```
+
+## E04
+
+Calculate the cumulative distribution of relative frequencies for the above distribution of clarity, rounded to 4 digits
+```{r}
+
+ferqRelclarity <- cumsum(specific_num)/sum(specific_num)
+round(ferqRelclarity,4)
+
+```
+
+
+## E05
+
+Build a histogram of relative frequencies for the variable price, using 6 elements in the partition of the sample space (same size); main title “Histogram of price”; label below the horizontal axis “Price”; fill bars with orange
+```{r}
+data_price <- diamondsDF_new$price
+breaks_custom <- seq(min(data_price), max(data_price), length.out = 7)
+hist(data_price, 
+     breaks = breaks_custom,
+     main = "Histogram of price",  
+     xlab = "Price",             
+     ylab = "Frequency",          
+     col = "orange")                  
+```
+
+
+## E06
+
+Build a scattergram of price (vertical axis) and carat (horizontal axis); the size of plotted characters should be 1/10 of the standard size; points associated with different values of carat should have a different color
+```{r}
+data_price <- diamondsDF_new$price
+data_carat <- diamondsDF_new$carat
+# create a color gradient
+color_palette <- colorRampPalette(c("purple","lightblue","green","yellow", "red"))
+
+# accordance with the values of carat to set the number of color
+n_colors <- length(unique(diamondsDF_new$carat))
+plot(data_carat,
+     data_price,
+     main = "scattergram of price (vertical axis) and carat (horizontal axis)",
+     col = color_palette(n_colors)[as.numeric(cut(diamondsDF_new$carat, n_colors))],
+     cex = 0.1)
+
+```
+
+## E07
+
+Build a conditional plot of price (vertical axis) and carat (horizontal axis) given cut
+```{r}
+data_price <- diamondsDF_new$price
+data_carat <- diamondsDF_new$carat
+data_cut <- diamondsDF_new$cut
+levels(data_cut)
+cut_fair <- subset(diamondsDF, cut == "Fair")
+cut_good <- subset(diamondsDF, cut == "Good")
+cut_very_good <- subset(diamondsDF, cut == "Very Good")
+cut_premium <- subset(diamondsDF, cut == "Premium")
+cut_ideal <- subset(diamondsDF, cut == "Ideal")
+
+plot(cut_fair$carat, cut_fair$price,
+     main = "Price vs. Carat by Cut", 
+     xlab = "Carat", 
+     ylab = "Price",
+     col = "#119DA4", 
+     pch = 22,
+     cex = 1,
+     xlim = range(diamondsDF$carat), 
+     ylim = range(diamondsDF$price))
+
+points(cut_good$carat, cut_good$price, col = "#FF6F61", pch = 23, cex = 0.6)
+points(cut_very_good$carat, cut_very_good$price, col = "#6B5B95", pch = 24, cex = 0.6)
+points(cut_premium$carat, cut_premium$price, col = "#88B04B", pch = 25, cex = 0.4)
+points(cut_ideal$carat, cut_ideal$price, col = "#E9C46A", pch = 21, cex = 0.2)
+#A few more harmonious colors
+legend("topright", legend = c("Fair", "Good", "Very Good", "Premium", "Ideal"),
+       col = c("#119DA4", "#FF6F61", "#6B5B95", "#88B04B", "#E9C46A"), 
+       pch = c(22, 23, 24, 25, 21))
+```
+
+## E08
+
+Save the plot at point (8) into a png file where width and height are 2480 pixels after choosing a convenient pointsize
+```{r}
+png(file="images/scatterPlot.png",
+    width = 2480,
+    height = 2480,
+    units = "px",
+    pointsize = 80)
+data_price <- diamondsDF_new$price
+data_carat <- diamondsDF_new$carat
+# create a color gradient
+color_palette <- colorRampPalette(c("purple","lightblue","green","yellow", "red"))
+
+# accordance with the values of carat to set the number of color
+n_colors <- length(unique(diamondsDF_new$carat))
+plot(data_carat,
+     data_price,
+     main = "Scattergram of price and carat",
+     col = color_palette(n_colors)[as.numeric(cut(diamondsDF_new$carat, n_colors))],
+     cex = 0.1)
+box()
+dev.off()
+```
+
+```{r}
+png(file="images/ConditionalPlot.png",
+    width = 2480,
+    height = 2480,
+    units = "px",
+    pointsize = 50)
+data_price <- diamondsDF_new$price
+data_carat <- diamondsDF_new$carat
+data_cut <- diamondsDF_new$cut
+levels(data_cut)
+cut_fair <- subset(diamondsDF, cut == "Fair")
+cut_good <- subset(diamondsDF, cut == "Good")
+cut_very_good <- subset(diamondsDF, cut == "Very Good")
+cut_premium <- subset(diamondsDF, cut == "Premium")
+cut_ideal <- subset(diamondsDF, cut == "Ideal")
+
+plot(cut_fair$carat, cut_fair$price,
+     main = "Price vs. Carat by Cut", 
+     xlab = "Carat", 
+     ylab = "Price",
+     col = "#119DA4", 
+     pch = 22,
+     cex = 1,
+     xlim = range(diamondsDF$carat), 
+     ylim = range(diamondsDF$price))
+
+points(cut_good$carat, cut_good$price, col = "#FF6F61", pch = 23, cex = 0.6)
+points(cut_very_good$carat, cut_very_good$price, col = "#6B5B95", pch = 24, cex = 0.6)
+points(cut_premium$carat, cut_premium$price, col = "#88B04B", pch = 25, cex = 0.4)
+points(cut_ideal$carat, cut_ideal$price, col = "#E9C46A", pch = 21, cex = 0.2)
+#A few more harmonious colors
+legend("topright", legend = c("Fair", "Good", "Very Good", "Premium", "Ideal"),
+       col = c("#119DA4", "#FF6F61", "#6B5B95", "#88B04B", "#E9C46A"), 
+       pch = c(22, 23, 24, 25, 21))
+box()
+dev.off()
+```
+
+
+
+## E09
+
+Consider the variable carat in the diamondsDF dataframe. Transform this variable with the natural logarithm. Put in the same graphical window the following graphs: histogram with overlapped a kernel density estimate of the pdf
+```{r}
+data_carat <- diamondsDF_new$carat
+log_data_carat <- log(data_carat)
+
+
+plot(density(log_data_carat), col = "red", lwd = 2, xlab = "Values",xlim = c(-3,3))
+hist(log_data_carat, probability = TRUE, col = rgb(1, 0, 0, 0.5),breaks=20,add=TRUE)
+```
+
+## E10
+
+quantile-quantile plot with the reference line in red (Normal). 
+```{r}
+qqnorm(log_data_carat)
+qqline(log_data_carat,
+       col=2,lwd=3)
+```
+
+dotchart plot of the ecdf of carat (log-transformed) with overlapped the cumulative pdf of a Normal distribution.
+```{r}
+ecdf_log_data_carat <- ecdf(log_data_carat)
+plot(ecdf_log_data_carat,
+         xlab="log_data carat",
+         ylab="cumulative density",
+         ylim=c(0,1),
+         xlim=c(-3,3),
+         lwd = 2)
+x <- seq(-3,3,length = 100)
+y <- pnorm(x,0,1)
+lines(x,y,col="red",type = "l",lwd = 2)
+
+legend("bottomright", legend = c("ecdf of log carta", "cumulative pdf of norm"),
+       col = c("black", "red"), 
+       pch = c("l","l"))
+```
+

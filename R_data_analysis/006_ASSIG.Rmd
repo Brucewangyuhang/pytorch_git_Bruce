@@ -1,0 +1,1231 @@
+---
+title: "assignment 6"
+author: "wang yuhang"
+date: "2024-11-19"
+output:
+  word_document:
+    toc: true
+    number_sections: true
+  pdf_document:
+    toc: true
+  html_document:
+    toc: true
+    number_sections: true
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache = TRUE, cache.path = "assignment6_cache/html/")
+```
+
+
+# Assignment 06
+
+A Case Study on wine quality
+
+The two datasets are related to red and white variants of the Portuguese “Vinho Verde” wine. The inputs include objective tests (e.g.PH values) and the output is based on sensory data (median of at least 3 evaluations made by wine experts). Each expert graded the wine quality between 0 (very bad) and 10 (very excellent).
+The details are described in [Cortez et al., 2009].
+P. Cortez, A. Cerdeira, F. Almeida, T. Matos and J. Reis. Modeling wine preferences by data mining from physicochemical properties. In Decision Support Systems, Elsevier, 47(4):547-553. ISSN: 0167-9236.
+
+Both the datasets have 12 variables created by physicochemical tests:
+
+1.ofixed acidity (quantitative)
+
+2.ovolatile acidity (quantitative)
+
+3.ocitric acid (quantitative)
+
+4.oresidual sugar (quantitative)
+
+5.ochlorides (quantitative)
+
+6.ofree sulfur dioxide (quantitative)
+
+7.ototal sulfur dioxide (quantitative)
+
+8.odensity (quantitative)
+
+9.opH (quantitative)
+
+10.osulphates (quantitative)
+
+11.oalcohol (quantitative)
+
+12.oquality (ordinal score between 0 and 10, based on sensory data)
+
+## E.1
+
+Import the file called “winequality-red.csv” as a tibble object called wq_red using the R library readr. Create the variable “color” and set all value to “red”. Import the file called “winequality-white.csv” as a tibble object called wq_white using the R library readr. Create the variable “color” and set all value to “white”.
+
+- Check that all variable names are equal in the two datasets
+
+- Change the original names of the two datasets according to the
+
+following table:
+
+| Old name      | New name |
+| ---------------- | --------- |
+| fixed acidity    | fixe_aci  |
+| volatile acidity | vola_aci  |
+| citric acid      | citri_aci |
+| residual sugar   | res_sugar |
+| chlorides        | chlorides |
+| free sulfur dioxide | free_sulf |
+| total sulfur dioxide | tot_sulf |
+| density          | density   |
+| pH               | pH        |
+| sulphates        | sulphates |
+| alcohol          | alcohol   |
+| quality          | quality   |
+| color            | color     |
+
+- merge the two datasets in a new tibble called wine_qua and rint the size of the resulting tibble.
+
+### 1. we should use read.csv2 because the delimiter is semicolons.
+
+check.names = FALSE can keep the original columns' name
+```{r}
+library(tibble)
+library(dplyr)
+library(readr)
+
+wq_red <- read.csv2("data/winequality-red.csv", check.names = FALSE) %>%
+  mutate(color = "red")
+
+wq_red <- as_tibble(wq_red)
+head(wq_red)
+
+wq_white <- read.csv2("data/winequality-white.csv", check.names = FALSE) %>%
+  mutate(color = "white")
+
+wq_white <- as_tibble(wq_white)
+head(wq_white)
+
+```
+### 2. check, change and merge
+
+
+```{r}
+if (all(names(wq_red) == names(wq_white))){
+  cat("Yes, all variable names are equal in the two datasets")
+}
+
+wq_red <- wq_red %>% rename(c(
+  "fixe_aci" = "fixed acidity",
+  "vola_aci" = "volatile acidity",
+  "citri_aci" = "citric acid",
+  "res_sugar" = "residual sugar",
+  "chlorides" = "chlorides",
+  "free_sulf" = "free sulfur dioxide",
+  "tot_sulf" = "total sulfur dioxide",
+  "density" = "density",
+  "pH" = "pH",
+  "sulphates" = "sulphates",
+  "alcohol" = "alcohol",
+  "quality" = "quality",
+  "color" = "color"
+  ))
+
+wq_white <- wq_white %>% rename(c(
+  "fixe_aci" = "fixed acidity",
+  "vola_aci" = "volatile acidity",
+  "citri_aci" = "citric acid",
+  "res_sugar" = "residual sugar",
+  "chlorides" = "chlorides",
+  "free_sulf" = "free sulfur dioxide",
+  "tot_sulf" = "total sulfur dioxide",
+  "density" = "density",
+  "pH" = "pH",
+  "sulphates" = "sulphates",
+  "alcohol" = "alcohol",
+  "quality" = "quality",
+  "color" = "color"
+  ))
+  
+head(wq_red)
+head(wq_white)
+```
+we should use bind_rows not bind_cols
+```{r}
+wine_qua <- bind_rows(wq_red, wq_white)
+
+cat("The size of the resulting tibble is:", dim(wine_qua), "\n")
+```
+
+
+## E.2
+
+Create a barplot for the variable quality (horizontal axis) to represent conditional relative frequencies given color = white and given color=red as stacked bars (hint: divide the absolute frequencies of quality by the total given color). Use the Pastel1 color palette and set the Y label to “Conditional relative frequencies”. Main breaks on the vertical axis should be at , while minor breaks at , thus limits on the Y axis are equal to  and .
+
+
+```{r}
+library(ggplot2)
+# group by color and quality, count the number of every quality subgroup
+wine_qua_Freq <- wine_qua %>%
+  group_by(color, quality) %>%
+  summarise(count = n(), .groups = "drop")
+
+# group by color, compute the CRF of every subgroup given color that sum(gross frequency) = 1 in each color
+wine_qua_Freq <- wine_qua_Freq %>%
+  group_by(color) %>%
+  mutate(conditional_relative_freq = count / sum(count))
+
+
+wine_qua_Freq
+ggplot(wine_qua_Freq, aes(x = quality, y = conditional_relative_freq, fill = color)) +
+  geom_bar(stat = "identity", position = "stack") +
+  scale_fill_brewer(palette = "Pastel1") +
+  labs(
+    x = "Quality",
+    y = "Conditional relative frequencies",
+    fill = "Color"
+  ) +
+  scale_y_continuous(
+    limits = c(0, 1),
+    breaks = seq(0, 1, by = 0.2),       
+    minor_breaks = seq(0, 1, by = 0.1) 
+  ) +
+  theme_bw()
+```
+
+### E.3
+
+Select a subset of wine_qua for observations where quality > 2 and quality < 9: call this tibble wine_qua2. Which is the size of the resulting tibble?
+Create a scatterplot of “fixed acidity” (horizontal axis) and “volatile acidity” (vertical axis) by faceting with respect to “color” (2 rows one column). Point should be 0.25 transparent and of size 0.75. The black and whiite theme should be applied. Add a smooth line to both scatterplots. Last, labels on the two axis should be the full-length variable names, for example volatile acidity.
+
+```{r}
+wine_qua2 <- wine_qua %>%
+  filter(quality > 2 & quality < 9)
+head(wine_qua2)
+cat("The size of the subset tibble is:", dim(wine_qua2), "\n")
+```
+
+```{r}
+library(scales)
+ggplot(wine_qua2, aes(x = as.numeric(fixe_aci), y = as.numeric(vola_aci))) +
+  geom_point(alpha = 0.25, size = 0.75) + 
+  geom_smooth(method = "lm", color = "red", na.rm = TRUE) +
+  facet_wrap(~color, 
+             scales = "free", 
+             nrow = 2,
+             ncol = 1, 
+             strip.position = "top") +
+  labs(
+    title = "Scatterplot of fixed acidity and volatile acidity by color",
+    x = "fixed acidity",  
+    y = "volatile acidity"   
+  ) +
+  theme_bw()+
+  # I want to control the y axis breaks, pretty_breaks can make it sets automatically by value. But the value of y should be numerics. If they are char it will come error.
+  scale_y_continuous(breaks = pretty_breaks(n = 6))
+```
+
+
+
+### E.4
+Consider the graphic in (E.3). Replicate the same pgraphic using the following pairs of quantitative variables: “fixe_aci (X) and citri_aci (Y)”, “citri_aci (X) and chlorides (Y)”, “chlorides (X) and tot_sulf (Y)”, “tot_sulf (X) and pH (Y)”, “pH (X) and sulphates (Y)”, “sulphates (X) and alcohol (Y)”. The smooth lines should be red and half transparent. Save each graphics as file with a name obtained pasting the two variable names, for example “fixe_aci_citri_aci.png”, and with 300 dpi. (optional hint: you could use a for(){} iteration)
+
+
+```{r}
+
+xy_pairs <- list(
+  c("fixe_aci", "citri_aci"),
+  c("citri_aci", "chlorides"),
+  c("chlorides", "tot_sulf"),
+  c("tot_sulf", "pH"),
+  c("pH", "sulphates"),
+  c("sulphates", "alcohol")
+)
+
+x_name_set <- c("fixed acidity","citric acid","chlorides","total sulfur dioxide","pH","sulphates")
+y_name_set <- c("citric acid","chlorides","total sulfur dioxide","pH","sulphates","alcohol")
+
+# I also want to keep the y axis clean and beautiful, I need to change the char typy to number before I use scale_y_continuous.
+wine_qua2$fixe_aci <- as.numeric(wine_qua2$fixe_aci)
+wine_qua2$citri_aci <- as.numeric(wine_qua2$citri_aci)
+wine_qua2$chlorides <- as.numeric(wine_qua2$chlorides)
+wine_qua2$tot_sulf <- as.numeric(wine_qua2$tot_sulf)
+wine_qua2$pH <- as.numeric(wine_qua2$pH)
+wine_qua2$sulphates <- as.numeric(wine_qua2$sulphates)
+wine_qua2$alcohol <- as.numeric(wine_qua2$alcohol)
+
+i = 0
+
+for (pair in xy_pairs) {
+  i = i + 1
+  x_v <- pair[1] 
+  y_v <- pair[2] 
+  x_name <- x_name_set[i] 
+  y_name <- y_name_set[i] 
+  plot_iter <- ggplot(wine_qua2, aes_string(x = x_v, y = y_v)) +
+    geom_point(alpha = 0.25, size = 0.75) + 
+    # alpha control the transparency of confidence interval not the line
+    geom_smooth(method = "lm", color = "red", alpha = 0.5, na.rm = TRUE) +
+    facet_wrap(~color, 
+               scales = "free", 
+               nrow = 2,
+               ncol = 1, 
+               strip.position = "top") +
+    labs(
+      title = paste("Scatterplot of", x_name, "and", y_name, "by color"),
+      x = x_name,  
+      y = y_name   
+    ) +
+    theme_bw()+
+    scale_y_continuous(breaks = pretty_breaks(n = 6))
+  ggsave(filename = file.path("images", paste0(x_v, "_", y_v, ".png")), plot = plot_iter, dpi = 300)
+}
+
+```
+
+
+### E.5
+
+Using the tibble object wq_red create a boxplot of each quantitative variable (the first 11) given “quality”. Overlap jittered points on the boxplot, color orange, transparency 0.25, point size 0.5. The axes should be labelled with the full variable name (Y) and “quality” (X). A title is welcome.
+
+```{r}
+name_condonsed <- names(wq_red[,1:11])
+
+# ggplot(wq_red, aes(x = factor(quality), y = fixe_aci, group = factor(quality))) +
+#   geom_boxplot(outlier.shape = NA, alpha = 1) +
+#   geom_jitter(color = "orange", alpha = 0.25, size = 0.5) +
+#   labs(
+#     x = "Quality",
+#     y = "fixe_aci"
+#   ) +
+#   theme_minimal()
+```
+
+```{r}
+library(tidyr)
+library(scales)
+full_name_labels <- c(
+  "fixe_aci" = "fixed acidity",
+  "vola_aci" = "volatile acidity",
+  "citri_aci" = "citric acid",
+  "res_sugar" = "residual sugar",
+  "chlorides" = "chlorides",
+  "free_sulf" = "free sulfur dioxide",
+  "tot_sulf" = "total sulfur dioxide",
+  "density" = "density",
+  "pH" = "pH",
+  "sulphates" = "sulphates",
+  "alcohol" = "alcohol",
+  "quality" = "quality",
+  "color" = "color"
+  )
+
+# consider longer pivot 
+wq_red_long <- wq_red %>%
+  pivot_longer(cols = 1:11, names_to = "Variable_name", values_to = "All_Value")
+
+head(wq_red_long)
+#str(wq_red_long$Value)
+wq_red_long$All_Value <- as.numeric(wq_red_long$All_Value)
+
+
+
+ggplot(wq_red_long, aes(x = factor(quality), y = All_Value, group = factor(quality))) +
+  geom_boxplot(alpha = 1) +
+  geom_jitter(color = "orange", alpha = 0.25, size = 0.5) +
+  facet_wrap(~Variable_name, 
+             scales = "free", 
+             ncol = 4, 
+             strip.position = "left",
+             # I want to reset the ylab as original name(full name) so I use the labeller to do it.
+             labeller = labeller(Variable_name = full_name_labels)) +
+  labs(
+    title = "Boxplot of each quantitative variable by quality",
+    x = "quality",
+    y = "quantitative variables"
+  ) +
+  theme_minimal()+
+  scale_y_continuous(breaks = pretty_breaks(n = 6))
+```
+
+### E.6
+
+Using the tibble object wq_red create one density plot for each quantitative variable (the first 11) given “quality” using faceting (wrap 2 by 3 grid) . For the estimate density functions, transparency is 0.25 and the fill and plot colors should change given the variable “quality”. The axes should be labelled with the full variable name (X) and “density” (Y).
+
+```{r}
+
+ggplot(wq_red_long, aes(x = All_Value, fill = factor(quality), color = factor(quality))) +
+  geom_density(alpha = 0.25) +
+  facet_wrap(~Variable_name, 
+             scales = "free", 
+             nrow = 4,
+             ncol = 3,
+             strip.position = "bottom",
+             labeller = labeller(Variable_name = full_name_labels)) +
+  labs(
+    title = "Density plot of each quantitative variable by quality",
+    x = "quantitative variables",
+    y = "density"
+  ) +
+  
+  theme_minimal()+
+  scale_y_continuous(breaks = pretty_breaks(n = 3))+
+  scale_x_continuous(breaks = pretty_breaks(n = 4))
+```
+
+### E.7
+
+Using the tibble wq_white, a linear model, called “m1”, is fitted for the response variable
+“alcohol” where the explanatory model terms are: “tot_sulf”, “density”, “pH”, “fixe_aci”,
+“citri_aci”, “res_sugar”, “chlorides”.
+
+Then a linear model, called “m2”, is fitted with the following model terms: “tot_sulf”, “density”,
+“pH”, “fixe_aci”, “citri_aci”, “res_sugar”, “chlorides”, “tot_sulf:density”, “tot_sulf:pH”,
+“tot_sulf:fixe_aci”, “tot_sulf:citri_aci”, “tot_sulf:res_sugar”, “tot_sulf:chlorides”, “density:pH”,
+“density:fixe_aci”, “density:citri_aci”, “density:res_sugar”, “density:chlorides”, “pH:fixe_aci”,
+“pH:citri_aci”, “pH:res_sugar”, “pH:chlorides”, “fixe_aci:citri_aci”, “fixe_aci:res_sugar”,
+“fixe_aci:chlorides”, “citri_aci:res_sugar”, “citri_aci:chlorides”, “res_sugar:chlorides”.
+
+The third linear model fitted for the response “alcohol”, called “m3”, is defined by the following
+terms: “tot_sulf”, “density”, “pH”, “fixe_aci”, “citri_aci”, “res_sugar”, “chlorides”,
+“I(tot_sulf^2)”, “I(density^2)”, “I(pH^2)”, “I(fixe_aci^2)”, “I(citri_aci^2)”, “I(res_sugar^2)”,
+“I(chlorides^2)”, “tot_sulf:density”, “tot_sulf:pH”, “tot_sulf:fixe_aci”, “tot_sulf:citri_aci”,
+“tot_sulf:res_sugar”, “tot_sulf:chlorides”, “density:pH”, “density:fixe_aci”, “density:citri_aci”,
+“density:res_sugar”, “density:chlorides”, “pH:fixe_aci”, “pH:citri_aci”, “pH:res_sugar”,
+“pH:chlorides”, “fixe_aci:citri_aci”, “fixe_aci:res_sugar”, “fixe_aci:chlorides”,
+“citri_aci:res_sugar”, “citri_aci:chlorides”, “res_sugar:chlorides”.
+
+Last, model “m3” is optimized backward according to the Bayesian Information Criterion. Fit the model called “m_step” using the R
+m_step <- step(m3,direction = "backward",k = log(nrow(wq_white)))
+Select the best model among “m1”,“m2”,“m3”,“m_step” according to the value of BIC.
+
+```{r}
+# I have to change the type of data because char cannot by lm.
+wq_white[, 1:11] <- lapply(wq_white[, 1:11], function(x) as.numeric(as.character(x)))
+
+m1 <- lm(alcohol ~ tot_sulf + density + pH + fixe_aci + citri_aci + res_sugar + chlorides, wq_white)
+summary(m1)
+```
+```{r}
+m2 <- lm(alcohol ~ tot_sulf + density + pH + fixe_aci + citri_aci + 
+           res_sugar + chlorides + tot_sulf:density + tot_sulf:pH + tot_sulf:fixe_aci + 
+           tot_sulf:citri_aci + tot_sulf:res_sugar + tot_sulf:chlorides + density:pH +
+           density:fixe_aci + density:citri_aci + density:res_sugar + density:chlorides +
+           pH:fixe_aci + pH:citri_aci + pH:res_sugar + pH:chlorides +
+           fixe_aci:citri_aci + fixe_aci:res_sugar + fixe_aci:chlorides +
+           citri_aci:res_sugar + citri_aci:chlorides +
+           res_sugar:chlorides, wq_white)
+summary(m2)
+```
+```{r}
+m3 <- lm(alcohol ~ tot_sulf + density + pH + fixe_aci + citri_aci + res_sugar + chlorides +
+           I(tot_sulf^2) + I(density^2) + I(pH^2) + I(fixe_aci^2) + I(citri_aci^2) +
+           I(res_sugar^2) + I(chlorides^2) + tot_sulf:density + tot_sulf:pH +
+           tot_sulf:fixe_aci + tot_sulf:citri_aci + tot_sulf:res_sugar + tot_sulf:chlorides +
+           density:pH + density:fixe_aci + density:citri_aci + density:res_sugar +
+           density:chlorides + pH:fixe_aci + pH:citri_aci + pH:res_sugar + pH:chlorides +
+           fixe_aci:citri_aci + fixe_aci:res_sugar + fixe_aci:chlorides + citri_aci:res_sugar+
+           citri_aci:chlorides + res_sugar:chlorides, data = wq_white)
+summary(m3)
+```
+```{r}
+m_step <- step(m3, direction = "backward", k = log(nrow(wq_white)))
+summary(m_step)
+```
+```{r}
+# check by BIC(the smaller,the better)
+bic_values <- c(
+  BIC(m1),
+  BIC(m2),
+  BIC(m3),
+  BIC(m_step)
+)
+
+models <- c("m1", "m2", "m3", "m_step")
+
+model_cp <- data.frame(Model = models, BIC = bic_values)
+
+# I want to find the minimal value of BIC
+print(paste("The best model is:", model_cp[which.min(model_cp$BIC), ]$Model, "with BIC:", model_cp[which.min(model_cp$BIC), ]$BIC))
+```
+
+
+### E.8
+From the best model in (E.7), build the tibble resiTB``  that contains the variableresi_bestmade by model residuals. Create the following graphs using the R packageggplot2`:
+
+1.histogram of residuals, with grey areas and black borders, 25 intervals on the horizontal axis;
+
+```{r}
+resiTB <- tibble(
+  variableresi_bestmade = residuals(m_step))
+
+ggplot(resiTB, aes(x = variableresi_bestmade)) +
+  geom_histogram(bins = 25, fill = "grey", color = "black") +
+  labs(
+    title = "Histogram of Residuals",
+    x = "Residuals",
+    y = "Frequency"
+  ) +
+  theme_bw()              
+```
+
+
+2.kernel density plot of residuals overlapped over the histogram of relative frequencies (35 intervals, transparency = 0.35); area under the kernel density are orange with transparency 0.70; the horizontal axis should be called “residuals”
+
+```{r}
+
+ggplot(resiTB, aes(x = variableresi_bestmade)) +
+  geom_histogram(aes(y = ..density..), bins = 35, fill = "grey", color = "black",           
+                 alpha = 0.35) +
+  geom_density(fill = "orange", alpha = 0.7) +
+  labs(
+    title = "Kernel Density and Relative Frequencies Histogram of Residuals",
+    x = "residuals",            
+    y = "relative frequency"     
+  ) +
+  theme_minimal()                
+
+```
+
+3.quantile-quantile plot of residuals; poins should have half the standard size and the reference line should have half the standard transparency, red color and one and half the standard thickness;
+
+```{r}
+ggplot(resiTB, aes(sample = variableresi_bestmade)) +
+  stat_qq(size = 0.5) +                    
+  stat_qq_line(color = "red",
+               alpha = 0.5,
+               size = 1.5) +
+  labs(
+    title = "Q-Q Plot of Residuals",
+    x = "Theoretical Quantiles",
+    y = "Sample Quantiles"
+  ) +
+  theme_bw()
+```
+
+4.empirical CDF of residuals with overlapped Normal cumulative pdf; put the name “Residuals” on the horizontal axis; the theoretical cdf should be red, half transparent, dashed and one and half thick;
+
+```{r}
+library(stats)
+
+# compute mean and sd
+mean_residuals <- mean(resiTB$variableresi_bestmade)
+sd_residuals <- sd(resiTB$variableresi_bestmade)
+
+# Plot ECDF and Normal CDF
+ggplot(resiTB, aes(x = variableresi_bestmade)) +
+  stat_ecdf(geom = "step", color = "lightblue", size = 1) +
+  stat_function(fun = pnorm,
+                args = list(mean = mean_residuals, sd = sd_residuals),
+                color = "red",                           
+                linetype = "dashed",                     
+                alpha = 0.5,                            
+                size = 1.5) +
+  labs(
+    title = "Empirical CDF and Normal cumulative PDF of Residuals",
+    x = "Residuals",                         
+    y = "Cumulative Probability"             
+  ) +
+  theme_minimal()                            
+
+```
+
+
+
+5.Scatterplot of residuals (vertical axis) and “tot_sulf” (horizontal axis).
+Points have a color depending on the value of “quality”. The list of colors to use is: “#D53E4F” (lowest quality code), “#F46D43”, “#FDAE61”, “#FEE08B”, “#ABDDA4”, “#66C2A5”, “#3288BD” (highest quality code). Put explicit names for the variables on the two axes. Add a smooth conditional mean to this graph.
+
+
+```{r}
+ggplot(resiTB, aes(y = variableresi_bestmade, x = as.numeric(wq_white$tot_sulf), color = factor(wq_white$quality))) +
+  geom_point(alpha = 0.5, size = 1.5) + 
+  geom_smooth(method = "loess", color = "purple") +
+  scale_color_manual(
+    values = c("#D53E4F", "#F46D43", "#FDAE61", "#FEE08B", "#ABDDA4", "#66C2A5", "#3288BD"),
+    name = "Quality types" 
+  )+
+  labs(
+    title = "Scatterplot of best mode residuals and total sulfur dioxide",
+    x = "total sulfur dioxide",  
+    y = "best mode residuals"   
+  ) +
+  theme_bw()
+```
+
+
+6.Scatterplot of residuals (vertical axis) and “density” (horizontal axis) . Points have a color depending on the value of “quality”. The list of colors to use is: “#D53E4F” (lowest quality code), “#F46D43”, “#FDAE61”, “#FEE08B”, “#ABDDA4”, “#66C2A5”, “#3288BD” (highest quality code). Put explicit names for the variables on the two axes. Add a smooth conditional mean to this graph.
+
+```{r}
+ggplot(resiTB, aes(y = variableresi_bestmade, x = as.numeric(wq_white$density), color = factor(wq_white$quality))) +
+  geom_point(alpha = 0.5, size = 1.5) + 
+  geom_smooth(method = "loess", color = "purple") +
+  scale_color_manual(
+    values = c("#D53E4F", "#F46D43", "#FDAE61", "#FEE08B", "#ABDDA4", "#66C2A5", "#3288BD"),
+    name = "Quality types" 
+  )+
+  labs(
+    title = "Scatterplot of best mode residuals and density",
+    x = "density",  
+    y = "best mode residuals"   
+  ) +
+  theme_bw()
+```
+
+
+7.Scatterplot of residuals (vertical axis) and “pH” (horizontal axis) . Points have a color depending on the value of “quality”. The list of colors to use is: “#D53E4F” (lowest quality code), “#F46D43”, “#FDAE61”, “#FEE08B”, “#ABDDA4”, “#66C2A5”, “#3288BD” (highest quality code). Put explicit names for the variables on the two axes. Add a smooth conditional mean to this graph.
+
+```{r}
+ggplot(resiTB, aes(y = variableresi_bestmade, x = as.numeric(wq_white$pH), color = factor(wq_white$quality))) +
+  geom_point(alpha = 0.5, size = 1.5) + 
+  geom_smooth(method = "loess", color = "purple") +
+  scale_color_manual(
+    values = c("#D53E4F", "#F46D43", "#FDAE61", "#FEE08B", "#ABDDA4", "#66C2A5", "#3288BD"),
+    name = "Quality types" 
+  )+
+  labs(
+    title = "Scatterplot of best mode residuals and pH",
+    x = "pH",  
+    y = "best mode residuals"   
+  ) +
+  theme_bw()
+```
+
+
+8.Scatterplot of residuals (vertical axis) and “fixe_aci” (horizontal axis)
+Points have a color depending on the value of “quality”. The list of colors to use is: “#D53E4F” (lowest quality code), “#F46D43”, “#FDAE61”, “#FEE08B”, “#ABDDA4”, “#66C2A5”, “#3288BD” (highest quality code). Put explicit names for the variables on the two axes. Add a smooth conditional mean to this graph.
+
+```{r}
+ggplot(resiTB, aes(y = variableresi_bestmade, x = as.numeric(wq_white$fixe_aci), color = factor(wq_white$quality))) +
+  geom_point(alpha = 0.5, size = 1.5) + 
+  geom_smooth(method = "loess", color = "purple") +
+  scale_color_manual(
+    values = c("#D53E4F", "#F46D43", "#FDAE61", "#FEE08B", "#ABDDA4", "#66C2A5", "#3288BD"),
+    name = "Quality types" 
+  )+
+  labs(
+    title = "Scatterplot of best mode residuals and fixed acidity",
+    x = "fixed acidity",  
+    y = "best mode residuals"   
+  ) +
+  theme_bw()
+```
+
+9.Scatterplot of residuals (vertical axis) and “citri_aci” (horizontal axis)
+Points have a color depending on the value of “quality”. The list of colors to use is: “#D53E4F” (lowest quality code), “#F46D43”, “#FDAE61”, “#FEE08B”, “#ABDDA4”, “#66C2A5”, “#3288BD” (highest quality code). Put explicit names for the variables on the two axes. Add a smooth conditional mean to this graph.
+
+```{r}
+ggplot(resiTB, aes(y = variableresi_bestmade, x = as.numeric(wq_white$citri_aci), color = factor(wq_white$quality))) +
+  geom_point(alpha = 0.5, size = 1.5) + 
+  geom_smooth(method = "loess", color = "purple") +
+  scale_color_manual(
+    values = c("#D53E4F", "#F46D43", "#FDAE61", "#FEE08B", "#ABDDA4", "#66C2A5", "#3288BD"),
+    name = "Quality types" 
+  )+
+  labs(
+    title = "Scatterplot of best mode residuals and citric acid",
+    x = "citric acid",  
+    y = "best mode residuals"   
+  ) +
+  theme_bw()
+```
+10.Scatterplot of residuals (vertical axis) and “res_sugar” (horizontal axis)
+Points have a color depending on the value of “quality”. The list of colors to use is: “#D53E4F” (lowest quality code), “#F46D43”, “#FDAE61”, “#FEE08B”, “#ABDDA4”, “#66C2A5”, “#3288BD” (highest quality code). Put explicit names for the variables on the two axes. Add a smooth conditional mean to this graph.
+
+```{r}
+ggplot(resiTB, aes(y = variableresi_bestmade, x = as.numeric(wq_white$res_sugar), color = factor(wq_white$quality))) +
+  geom_point(alpha = 0.5, size = 1.5) + 
+  geom_smooth(method = "loess", color = "purple") +
+  scale_color_manual(
+    values = c("#D53E4F", "#F46D43", "#FDAE61", "#FEE08B", "#ABDDA4", "#66C2A5", "#3288BD"),
+    name = "Quality types" 
+  )+
+  labs(
+    title = "Scatterplot of best mode residuals and residual sugar",
+    x = "residual sugar",  
+    y = "best mode residuals"   
+  ) +
+  theme_bw()
+```
+
+11.Scatterplot of residuals (vertical axis) and “chlorides” (horizontal axis)
+Points have a color depending on the value of “quality”. The list of colors to use is: “#D53E4F” (lowest quality code), “#F46D43”, “#FDAE61”, “#FEE08B”, “#ABDDA4”, “#66C2A5”, “#3288BD” (highest quality code). Put explicit names for the variables on the two axes. Add a smooth conditional mean to this graph.
+
+```{r}
+ggplot(resiTB, aes(y = variableresi_bestmade, x = as.numeric(wq_white$chlorides), color = factor(wq_white$quality))) +
+  geom_point(alpha = 0.5, size = 1.5) + 
+  geom_smooth(method = "loess", color = "purple") +
+  scale_color_manual(
+    values = c("#D53E4F", "#F46D43", "#FDAE61", "#FEE08B", "#ABDDA4", "#66C2A5", "#3288BD"),
+    name = "Quality types" 
+  )+
+  labs(
+    title = "Scatterplot of best mode residuals and chlorides",
+    x = "chlorides",  
+    y = "best mode residuals"   
+  ) +
+  theme_bw()
+```
+
+12.Scatterplot of residuals (vertical axis) and fitted values (horizontal axis) Scatterplot of residuals (vertical axis) and “chlorides” (horizontal axis)
+Points have a color depending on the value of “quality”. The list of colors to use is: “#D53E4F” (lowest quality code), “#F46D43”, “#FDAE61”, “#FEE08B”, “#ABDDA4”, “#66C2A5”, “#3288BD” (highest quality code). Put explicit names for the variables on the two axes. Add a smooth conditional mean to this graph.
+
+```{r}
+fitted_values = fitted(m_step)
+ggplot(resiTB, aes(y = variableresi_bestmade, x = fitted_values, color = factor(wq_white$quality))) +
+  geom_point(alpha = 0.5, size = 1.5) + 
+  geom_smooth(method = "loess", color = "purple") +
+  scale_color_manual(
+    values = c("#D53E4F", "#F46D43", "#FDAE61", "#FEE08B", "#ABDDA4", "#66C2A5", "#3288BD"),
+    name = "Quality types" 
+  )+
+  labs(
+    title = "Scatterplot of best mode residuals and fitted_values",
+    x = "fitted_values",  
+    y = "best mode residuals"   
+  ) +
+  theme_bw()
+```
+
+### E.9
+Reconsider the best model for the “wine quality - white” dataset. Standardize the response and the explanatory variables and create a new tibble. Refit the best model obtained before after standardization and call m_step_s the object produced by lm after fitting this model.
+Print the summary of this new model.
+Create with ggplot2 a graph where confidence intervals of level  are shown as segments for each coefficient but “(Intercept)” and “density” (hint: remove those two model terms from the list).
+The point estimate should be plotted as squares.
+
+```{r}
+wq_white_standardized <- wq_white %>%
+  mutate(across(
+    1:11,                     # Just consider the first eleven columns,the last two is class types
+    ~ (.-mean(.)) / sd(.)
+  ))
+#head(wq_white_standardized)
+
+m1 <- lm(alcohol ~ tot_sulf + density + pH + fixe_aci + citri_aci + res_sugar + chlorides, wq_white_standardized)
+summary(m1)
+
+m2 <- lm(alcohol ~ tot_sulf + density + pH + fixe_aci + citri_aci + 
+           res_sugar + chlorides + tot_sulf:density + tot_sulf:pH + tot_sulf:fixe_aci + 
+           tot_sulf:citri_aci + tot_sulf:res_sugar + tot_sulf:chlorides + density:pH +
+           density:fixe_aci + density:citri_aci + density:res_sugar + density:chlorides +
+           pH:fixe_aci + pH:citri_aci + pH:res_sugar + pH:chlorides +
+           fixe_aci:citri_aci + fixe_aci:res_sugar + fixe_aci:chlorides +
+           citri_aci:res_sugar + citri_aci:chlorides +
+           res_sugar:chlorides, wq_white_standardized)
+summary(m2)
+
+m3 <- lm(alcohol ~ tot_sulf + density + pH + fixe_aci + citri_aci + res_sugar + chlorides +
+           I(tot_sulf^2) + I(density^2) + I(pH^2) + I(fixe_aci^2) + I(citri_aci^2) +
+           I(res_sugar^2) + I(chlorides^2) + tot_sulf:density + tot_sulf:pH +
+           tot_sulf:fixe_aci + tot_sulf:citri_aci + tot_sulf:res_sugar + tot_sulf:chlorides +
+           density:pH + density:fixe_aci + density:citri_aci + density:res_sugar +
+           density:chlorides + pH:fixe_aci + pH:citri_aci + pH:res_sugar + pH:chlorides +
+           fixe_aci:citri_aci + fixe_aci:res_sugar + fixe_aci:chlorides + citri_aci:res_sugar+
+           citri_aci:chlorides + res_sugar:chlorides, wq_white_standardized)
+summary(m3)
+```
+
+
+```{r}
+m_step_s <- step(m3, direction = "backward", k = log(nrow(wq_white_standardized)))
+
+# check by BIC(the smaller,the better)
+bic_values <- c(
+  BIC(m1),
+  BIC(m2),
+  BIC(m3),
+  BIC(m_step_s)
+)
+
+summary(m_step_s)
+```
+
+```{r}
+models <- c("m1", "m2", "m3", "m_step_s")
+
+model_cp <- data.frame(Model = models, BIC = bic_values)
+
+# I want to find the minimal value of BIC
+print(paste("The best model is:", model_cp[which.min(model_cp$BIC), ]$Model, "with BIC:", model_cp[which.min(model_cp$BIC), ]$BIC))
+```
+
+
+Create with ggplot2 a graph where confidence intervals of level  are shown as segments for each coefficient but “(Intercept)” and “density” (hint: remove those two model terms from the list).
+The point estimate should be plotted as squares.
+
+```{r}
+confint_table <- as_tibble(confint(m_step_s), rownames = "m_step_s_element") %>%
+  rename(left = `2.5 %`, right = `97.5 %`) %>%
+  mutate(Coefficient = coef(m_step_s)) %>%       
+  filter(!m_step_s_element %in% c("(Intercept)", "density"))  # remove
+
+confint_table
+```
+```{r}
+ggplot(confint_table, aes(x = m_step_s_element, y = Coefficient)) +
+  geom_point(shape = 15, size = 1) +               
+  geom_errorbar(aes(ymin = left, ymax = right),   
+                width = 0.2) +
+  labs(
+    title = "Coefficients with Confidence Intervals",
+    x = "Model m_step_s",
+    y = "Confidence Intervals"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),  # Rotation x I want to see it clearly
+    axis.title = element_text(size = 12)
+  )
+```
+
+
+### E.10
+
+Create violin plots for residuals of m_step_s conditional on quality and add vertical red lines to such graph for each value of quality.
+
+```{r}
+resiTB_s <- tibble(
+  residuals = residuals(m_step_s)
+)
+ggplot(resiTB_s, aes(x = factor(wq_white_standardized$quality), y = residuals)) +
+  geom_violin(fill = "blue", color = "black", alpha = 0.6) + 
+  geom_vline(aes(xintercept = as.numeric(factor(wq_white_standardized$quality))),
+             color = "red", size = 0.75, linetype = "dashed") +
+  labs(
+    title = "Violin Plot of Residuals Conditional on Quality",
+    x = "Quality",
+    y = "Residuals"
+  ) +
+  theme_bw()
+```
+
+### E.11
+
+Add the qualitative variable “quality” to the m_step_s model as a factor, fit the new model called m_step_sq. Calculate the BIC value. Obtain a violin plot of residuals for the new model given variable “quality”.
+
+
+```{r}
+m3 <- lm(alcohol ~ tot_sulf + density + pH + fixe_aci + citri_aci + res_sugar + chlorides +
+           I(tot_sulf^2) + I(density^2) + I(pH^2) + I(fixe_aci^2) + I(citri_aci^2) +
+           I(res_sugar^2) + I(chlorides^2) + tot_sulf:density + tot_sulf:pH +
+           tot_sulf:fixe_aci + tot_sulf:citri_aci + tot_sulf:res_sugar + tot_sulf:chlorides +
+           density:pH + density:fixe_aci + density:citri_aci + density:res_sugar +
+           density:chlorides + pH:fixe_aci + pH:citri_aci + pH:res_sugar + pH:chlorides +
+           fixe_aci:citri_aci + fixe_aci:res_sugar + fixe_aci:chlorides + citri_aci:res_sugar+
+           citri_aci:chlorides + res_sugar:chlorides + factor(quality), wq_white_standardized)
+summary(m3)
+m_step_sq <- step(m3, direction = "backward", k = log(nrow(wq_white_standardized)))
+
+# check by BIC(the smaller,the better)
+bic_values <- c(
+  BIC(m1),
+  BIC(m2),
+  BIC(m3),
+  BIC(m_step_s),
+  BIC(m_step_sq)
+)
+
+summary(m_step_sq)
+```
+```{r}
+models <- c("m1", "m2", "m3", "m_step_s", "m_step_sq")
+
+model_cp <- data.frame(Model = models, BIC = bic_values)
+model_cp
+```
+
+```{r}
+resiTB_sq <- tibble(
+  residuals = residuals(m_step_sq)
+)
+ggplot(resiTB_sq, aes(x = factor(wq_white_standardized$quality), y = residuals)) +
+  geom_violin(fill = "blue", color = "black", alpha = 0.6) + 
+  geom_vline(aes(xintercept = as.numeric(factor(wq_white_standardized$quality))),
+             color = "red", size = 0.75, linetype = "dashed") +
+  labs(
+    title = "Violin Plot of Residuals Conditional on Quality",
+    x = "Quality",
+    y = "Residuals"
+  ) +
+  theme_bw()
+```
+
+### E.12
+
+Consider the last model called m_step_sq and create a DAG using igraph R package, where the child variable is “alcohol” and its parents are the explanatory variables exploited in the linear predictor. (Hint: see the DAG below, but check the nodes)
+
+```{r}
+library(igraph)
+
+summary(m_step_sq)
+# Define based on the model m_step_sq
+child <- "alcohol"
+parents <- c(
+  "tot_sulf", "density", "pH", "fixe_aci", "citri_aci", "res_sugar",
+  "I(density^2)", "I(pH^2)", "I(fixe_aci^2)", "I(citri_aci^2)", "I(res_sugar^2)",
+  "density:res_sugar", "fixe_aci:citri_aci", "citri_aci:res_sugar"
+)
+
+edges <- c()
+for (parent in parents) {
+  edges <- c(edges, parent, child)
+}
+
+# Create the graph object
+DAG <- make_graph(edges, directed = TRUE)
+
+DAG
+V(DAG)
+
+#Setting my layout for every node by the specific location(x,y)
+# [1] tot_sulf            alcohol             density             pH                 
+# [5] fixe_aci            citri_aci           res_sugar           I(density^2)       
+# [9] I(pH^2)             I(fixe_aci^2)       I(citri_aci^2)      I(res_sugar^2)     
+# [13] density:res_sugar   fixe_aci:citri_aci  citri_aci:res_sugar
+my_layout <- matrix(    c(-70, 0,   
+                          320, 10,   
+                          -40, 0,   
+                          -10, 0,   
+                          20, 0,   
+                          50, 0,
+                          80, 0,
+                          110, 0,
+                          140, 0,
+                          170, 0,
+                          200, 0,
+                          230, 0,
+                          260, 0,
+                          290, 0,
+                          320, 0),  
+                        ncol = 2, byrow = TRUE)
+
+plot(DAG,
+     layout = my_layout, 
+     vertex.size = 2,                 
+     vertex.label.color = "blue",
+     vertex.label.cex = 0.5,
+     vertex.label.dist = c(1,1,2
+                             ,2,2,2
+                             ,2,3,2
+                             ,3,2,3
+                             ,2,3,2), 
+     vertex.label.degree = c(pi,pi,pi/2
+                             ,pi/2,pi/2,pi/2
+                             ,pi/2,pi/2,pi/2
+                             ,pi/2,pi/2,pi/2
+                             ,pi/2,pi/2,pi/3), 
+     edge.color = "grey",              
+     edge.width = 1.5,
+     edge.arrow.size = 0.5,
+     asp = 0) # I need to define by myself
+
+```
+
+
+### E.13
+Does tot_sulf in white wine depend on one or more variables among “density”, “fixe_aci”, “citri_aci”, “res_sugar”, “pH”, “qualityF”? Find the best model using the tibble wq_whit_sto fit the  starting model with thelm()` formula:
+tot_sulf ~ (density + fixe_aci + citri_aci + res_sugar + pH + 
+    quality)^2 + I(density^2) + I(fixe_aci^2) + I(citri_aci^2) + 
+    I(res_sugar^2) + I(pH^2)
+Then simply as far as possible this model according to the value of BIC by performing a BIC-based backward search towards the simplest model. Call the resulting R object for such model tot_su_step.
+Extend the DAG in (E.12) with further nodes from explanatory variable in tot_su_step and edges towards tot_sulf and from tot_sulf to alcohol.
+
+```{r}
+original_model <- lm(
+  tot_sulf ~ (density + fixe_aci + citri_aci + res_sugar + pH + quality)^2 + 
+               I(density^2) + I(fixe_aci^2) + I(citri_aci^2) + I(res_sugar^2) + I(pH^2),
+  data = wq_white_standardized
+)
+
+# Based by BIC k = log(n), based by AIC k = 2
+tot_su_step <- step(original_model, direction = "backward", k = log(nrow(wq_white_standardized))
+)
+```
+
+```{r}
+summary(original_model)
+summary(tot_su_step)
+```
+
+```{r}
+DAG_ex <- make_graph(
+  ~ "density"-+"tot_sulf", 
+    "fixe_aci"-+"tot_sulf", 
+    "citri_aci"-+"tot_sulf", 
+    "res_sugar"-+"tot_sulf",
+    "I(density^2)"-+"tot_sulf",
+    "I(res_sugar^2)"-+"tot_sulf",
+    "I(pH^2)"-+"tot_sulf", 
+    "density:citri_aci"-+"tot_sulf", 
+    "density:pH"-+"tot_sulf", 
+    "density:quality"-+"tot_sulf",
+    "fixe_aci:citri_aci"-+"tot_sulf",
+    "fixe_aci:quality"-+"tot_sulf",
+    "citri_aci:res_sugar"-+"tot_sulf",
+    "tot_sulf"-+"alcohol")
+
+layout <- layout_as_tree(DAG_ex) 
+# I want to make the child at top
+layout[, 2] <- -layout[, 2] 
+V(DAG_ex)
+
+plot(DAG_ex,
+     layout = layout, 
+     vertex.size = 2,                 
+     vertex.label.color = "blue",
+     vertex.label.cex = 0.5,
+     vertex.label.dist = c(2,1,2,2,2,
+                           2,1,2,1,2,
+                           1,2,1,2,1), 
+     vertex.label.degree = c(pi/2,pi,pi/2,pi/2,pi/2,
+                           pi/2,pi/2,pi/2,pi/2,pi/2,
+                           pi/2,pi/2,pi/2,pi/2,pi), 
+     edge.color = "grey",              
+     edge.width = 1.5,
+     edge.arrow.size = 0.5,
+     asp = 0) # I need to define by myself
+```
+
+### E.14
+
+Fit the four Bayesian models listed below (dfault weakly informative prior distributions) using the white wine tibble wq_white using the R package rstanarm and function stan_glm:
+and call them respectively:
+m1_bay
+m2_bay
+m3_bay
+m_step_bay
+Compare model performances using the Bayesian leave-one-out approach, for example by invoking
+m1_bay_loo <- loo(m1_bay)
+to create the object m1_bay_loo. Similar objects are created and named as:
+m1_bay_loo
+m2_bay_loo
+m3_bay_loo
+m_step_bay_loo
+Choose the model with expected log-posterior density difference (elpd_dif) equal to zero by invoking the function loo_compare() on the above list from m1_bay_loo on.
+Invoke the summary function on the best Bayesian model previously found.
+
+```{r}
+names(wq_white)
+```
+
+```{r}
+#install.packages("rstanarm")
+library(rstanarm)
+
+m1_bay <- stan_glm(alcohol ~ fixe_aci + vola_aci + citri_aci + res_sugar + chlorides + free_sulf + tot_sulf + density + pH + sulphates, 
+                   data = wq_white, 
+                   prior = normal(0, 2.5),   
+                   prior_intercept = normal(0, 5), 
+                   seed = 112)
+
+m2_bay <- stan_glm(alcohol ~ (fixe_aci + vola_aci + citri_aci + res_sugar + chlorides + free_sulf + tot_sulf + density + pH + sulphates)^2, 
+                   data = wq_white, 
+                   prior = normal(0, 2.5), 
+                   prior_intercept = normal(0, 5), 
+                   seed = 112)
+
+m3_bay <- stan_glm(alcohol ~ (fixe_aci + vola_aci + citri_aci + res_sugar + chlorides + free_sulf + tot_sulf + density + pH + sulphates)^2 + 
+                                 I(fixe_aci^2) + I(vola_aci^2) + I(citri_aci^2) + 
+                                 I(res_sugar^2) + I(chlorides^2) + I(free_sulf^2) +
+                                 I(tot_sulf^2) + I(density^2) + I(pH^2) + I(sulphates^2),
+                   data = wq_white, 
+                   prior = normal(0, 2.5), 
+                   prior_intercept = normal(0, 5), 
+                   seed = 112)
+
+m_step_bay <- stan_glm(formula(m_step), 
+                       data = wq_white, 
+                       prior = normal(0, 2.5), 
+                       prior_intercept = normal(0, 5), 
+                       seed = 112)
+
+```
+
+```{r}
+colSums(is.na(wq_white))
+```
+
+```{r}
+m1_bay_loo <- loo(m1_bay, k_threshold = 0.7)
+m2_bay_loo <- loo(m2_bay, k_threshold = 0.7)
+m3_bay_loo <- loo(m3_bay, k_threshold = 0.7)
+m_step_bay_loo <- loo(m_step_bay, k_threshold = 0.7)
+
+loo_results <- loo_compare(m1_bay_loo, m2_bay_loo, m3_bay_loo, m_step_bay_loo)
+
+print(loo_results)
+
+```
+
+```{r}
+# The best model is m3_bay that elpd_diff is 0 and the smaller the elpd_diff, the worse the performance.
+summary(m3_bay)
+```
+
+### E.15
+
+Consider the best Bayesian model obtained in (E.14). Export the simulated realizations into a
+tibble called bestBayM.
+
+```{r}
+bestBayM <- as_tibble(m3_bay)
+head(bestBayM)
+```
+Plot the credibility interval for the best Bayesian model, but limit the range of values on the horizontal axis from -0.5 to 1.0
+Using the exported matrix bestBayM obtain the MCMC areas for parameters
+"pH"
+"citri_aci"
+using an inner interval of probability 0.6 and an outer interval with whose probability is 0.8.
+Plot the posterior predictive density for the best bayesian model using as color scheme “blue” and picking 200 draws. Provide a short comment about this visualized output.
+```{r}
+# we consider the credibility interval is 95% and my model is bayes model not the general lm model, so I can use posterior_interval to gain the credibility interval.
+posterior_ci <- posterior_interval(m3_bay, prob = 0.95)
+
+ci_tibble_m3_bay <- tibble(
+  Value_m3_bay = rownames(posterior_ci),  
+  CI_lower = posterior_ci[, 1],  
+  CI_upper = posterior_ci[, 2]
+)
+print(ci_tibble_m3_bay)
+
+ggplot(ci_tibble_m3_bay, aes(x = (CI_lower+CI_upper)/2, y = Value_m3_bay)) +
+  geom_point(aes(color = Value_m3_bay), size = 1) +  
+  geom_errorbarh(aes(xmin = CI_lower, xmax = CI_upper), height = 0.5) +   
+  scale_x_continuous(limits = c(-0.5, 1.0)) + 
+  labs(
+    title = "Credible Intervals for the m3_bay Model",
+    x = "Estimate",
+    y = "Terms"
+  ) +
+  theme_bw() +
+  theme(
+    axis.text.y = element_text(size = 5),
+    axis.title = element_text(size = 12),
+    legend.position = "none"
+  )
+```
+```{r}
+# Obtain posterior intervals with probability levels 0.6 and 0.8
+pH_interval_0.6 <- posterior_interval(m3_bay, pars = "pH", prob = 0.6)
+citri_aci_interval_0.6 <- posterior_interval(m3_bay, pars = "citri_aci", prob = 0.6)
+
+pH_interval_0.8 <- posterior_interval(m3_bay, pars = "pH", prob = 0.8)
+citri_aci_interval_0.8 <- posterior_interval(m3_bay, pars = "citri_aci", prob = 0.8)
+
+print(pH_interval_0.6)
+print(citri_aci_interval_0.6)
+
+print(pH_interval_0.8)
+print(citri_aci_interval_0.8)
+```
+```{r}
+# select the sample
+set.seed(42)
+bestBayM_200_draws <- bestBayM %>%
+  select(pH, citri_aci) %>%       
+  slice_sample(n = 200) 
+
+
+head(bestBayM_200_draws)
+```
+
+```{r}
+# Extract posterior samples for parameters "pH" and "citri_aci"
+pH_samples <- bestBayM_200_draws$pH
+citri_aci_samples <- bestBayM_200_draws$citri_aci
+
+# Calculate posterior intervals for pH and citri_aci at prob = 0.6 and prob = 0.8
+pH_interval_0.6 <- posterior_interval(m3_bay, pars = "pH", prob = 0.6)
+citri_aci_interval_0.6 <- posterior_interval(m3_bay, pars = "citri_aci", prob = 0.6)
+
+pH_interval_0.8 <- posterior_interval(m3_bay, pars = "pH", prob = 0.8)
+citri_aci_interval_0.8 <- posterior_interval(m3_bay, pars = "citri_aci", prob = 0.8)
+
+# Plot posterior distributions with MCMC areas
+# pH plot
+ggplot(data.frame(pH_samples), aes(x = pH_samples)) +
+  geom_density(fill = "blue", alpha = 0.6) +  # Blue color scheme for the posterior density
+  geom_vline(xintercept = pH_interval_0.6[, 1], color = "red", linetype = "dashed", size = 1) +  
+  geom_vline(xintercept = pH_interval_0.6[, 2], color = "red", linetype = "dashed", size = 1) +  
+  geom_vline(xintercept = pH_interval_0.8[, 1], color = "green", linetype = "dashed", size = 1) +  
+  geom_vline(xintercept = pH_interval_0.8[, 2], color = "green", linetype = "dashed", size = 1) +  
+  labs(
+    title = "Posterior Distribution of pH with Credible Intervals",
+    x = "pH Parameter Value",
+    y = "Density"
+  ) +
+  theme_minimal()
+
+# Citri_Aci plot
+ggplot(data.frame(citri_aci_samples), aes(x = citri_aci_samples)) +
+  geom_density(fill = "blue", alpha = 0.6) +  # Blue color scheme for the posterior density
+  geom_vline(xintercept = citri_aci_interval_0.6[, 1], color = "red", linetype = "dashed", size = 1) +  
+  geom_vline(xintercept = citri_aci_interval_0.6[, 2], color = "red", linetype = "dashed", size = 1) +  
+  geom_vline(xintercept = citri_aci_interval_0.8[, 1], color = "green", linetype = "dashed", size = 1) +  
+  geom_vline(xintercept = citri_aci_interval_0.8[, 2], color = "green", linetype = "dashed", size = 1) +  
+  labs(
+    title = "Posterior Distribution of citri_aci with Credible Intervals",
+    x = "citri_aci Parameter Value",
+    y = "Density"
+  ) +
+  theme_minimal()
+
+```
+
+```{r}
+cat("The horizontal axis: represents the possible range of values of the posterior distribution of the parameter pH and citri_aci.
+The vertical axis: represents the density, indicating the likelihood (probability) of the corresponding parameter value.\n")
+cat("Inner area within the red line and outer area within the green line\n")
+cat("\n")
+
+cat("The graph shows that the posterior distribution of pH is concentrated in the positive range(Inner area within the red line of the core area[6.25, 10]), which means that pH may have a positive impact on the alcohol content.\n")
+cat("\n")
+
+cat("The graph shows that the posterior distribution of citri_aci is concentrated in the negative range(Inner area within the red line of the core area[-3, 0]), which means that citri_aci may have a negative impact on the alcohol content.\n")
+cat("\n")
+
+cat("The green line (80% probability interval) shows a wider credible range, all positive. This indicates that almost all pH values are positive, with a strong likelihood of having a positive effect on alcohol.\n")
+cat("\n")
+
+cat("The green line (80% probability interval) indicates a wider credible range, covering negative values and some positive values. This shows that there is a certain probability that the value of citri_aci can be positive, which may also have a certain positive impact on alcohol, but the uncertainty is strong.\n")
+
+```
+Compare the realized medians of variable “alcohol” given “quality” from tibble wq_white with
+1000 draws from the predictive distribution of the best Bayesian model.
+Check the convergence of MCMC chains by visualizing traces of model parameters “pH” and
+“citri_aci”. Set the warmup iterations to 1000.
+```{r}
+realized_medians <- wq_white %>%
+  group_by(quality) %>%
+  summarize(median_alcohol = median(alcohol))
+
+realized_medians
+```
+
+```{r}
+set.seed(42)
+# Generate 1000 draws
+posterior_draws <- posterior_predict(m3_bay, nsamples = 1000)
+
+predictive_medians <- wq_white %>%
+  group_by(quality) %>%
+  summarise(pred_median = median(posterior_draws[, quality], na.rm = TRUE))
+
+predictive_medians
+```
+```{r}
+comparison_medians <- realized_medians %>%
+  left_join(predictive_medians, by = "quality") %>%
+  mutate(difference = median_alcohol - pred_median)
+
+print(comparison_medians)
+```
+```{r}
+library(bayesplot)
+
+# I should not re-train for m3_bay as because I set the warmup as 1000 in m3_bay.
+mcmc_trace(as.array(m3_bay), pars = c("pH", "citri_aci"))
+
+# then also check the Rhat(closer 1, better)
+rhat(m3_bay)
+
+cat("The R-hat values of most parameters are close to 1, indicating that the chains for these parameters have converged.\n")
+cat("sulphates:1.126423 and I(density^2):1.462503 -- They are a little bit high than others, maybe increase the warmup times and iteration times will be better.")
+
+```
+
+

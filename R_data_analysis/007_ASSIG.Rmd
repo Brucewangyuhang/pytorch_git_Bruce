@@ -1,0 +1,417 @@
+---
+title: "assignment 7"
+author: "wang yuhang"
+date: "2024-12-05"
+output:
+  word_document:
+    toc: true
+    number_sections: true
+  html_document:
+    toc: true
+    number_sections: true
+    df_print: paged
+  pdf_document:
+    toc: true
+---
+# Assignment 07
+
+In this exercise you are asked to work with the shape file of Italy and the ISTAT 2024 data (i.e. primary source of official statistics in Italy). 
+
+## Map with inhabitants
+
+Load the shape file gadm40_ITA_1 and the CSV file italy_istat2024_inhabitants.csv relative to the inhabitants per region according to the ISTAT 2024.
+
+Discretize the later data with 8 bins, using the function discretize by installing the package arules with the command: install.packages(“arules”)
+
+Define a new column of the loaded shape file, named: inhabitants
+Plot a map of Italy with the regions colored according to the former discretization.
+
+```{r}
+library(sf)          
+library(dplyr)       
+library(arules)      
+library(ggplot2)    
+
+#shapefile
+it_gadm_40_SF <- st_read("data/gadm40_ITA_1.shp")
+
+#CSV file
+it_inhabitants_2024_CV <- read.csv("data/italy_istat2024_inhabitants.csv")
+
+head(it_gadm_40_SF)
+it_inhabitants_2024_CV
+```
+```{r}
+it_inhabitants_2024_CV <- it_inhabitants_2024_CV %>%
+  rename(NAME_1 = id)  
+names(it_inhabitants_2024_CV)
+
+it_gadm_40_SF <- it_gadm_40_SF %>%
+  left_join(it_inhabitants_2024_CV, by = "NAME_1")
+```
+```{r}
+it_gadm_40_SF$inhabitants_binned <- discretize(
+  it_gadm_40_SF$inhabitants,
+  method = "interval",
+  categories = 8
+)
+
+# check the 8 bins
+table(it_gadm_40_SF$inhabitants_binned)
+```
+```{r}
+library(stringi)
+library(stringr)
+
+# Check the plot I find there is a NAN in Valle d'Aosta, so I should deal with it.
+missing_data <- it_gadm_40_SF %>%
+  filter(is.na(inhabitants))  
+
+missing_data$NAME_1
+
+table(stri_enc_mark(it_gadm_40_SF$NAME_1))  
+table(stri_enc_mark(it_inhabitants_2024_CV$NAME_1))
+
+# one of ASCII and another is native
+it_gadm_40_SF$NAME_1 <- iconv(it_gadm_40_SF$NAME_1, from = "", to = "UTF-8")
+it_inhabitants_2024_CV$NAME_1 <- iconv(it_inhabitants_2024_CV$NAME_1, from = "", to = "UTF-8")
+
+
+# make the native to the UTF-8 and check
+table(stri_enc_mark(it_gadm_40_SF$NAME_1))  
+table(stri_enc_mark(it_inhabitants_2024_CV$NAME_1))  
+
+```
+
+```{r}
+# it still has difference
+setdiff(it_gadm_40_SF$NAME_1, it_inhabitants_2024_CV$NAME_1)
+setdiff(it_inhabitants_2024_CV$NAME_1, it_gadm_40_SF$NAME_1)
+
+# check the punctuation ' and then I see the difference in c2 a0
+charToRaw(setdiff(it_gadm_40_SF$NAME_1, it_inhabitants_2024_CV$NAME_1))  
+charToRaw(setdiff(it_inhabitants_2024_CV$NAME_1, it_gadm_40_SF$NAME_1)) 
+
+# deal with c2 a0 as common
+it_inhabitants_2024_CV$NAME_1 <- gsub("\u00A0", " ", it_inhabitants_2024_CV$NAME_1)
+
+
+# Then regenerate as before but consider remove the previous inhabitants column, it will influence the bins outcome 
+it_gadm_40_SF <- it_gadm_40_SF %>%
+  select(-inhabitants)
+
+it_gadm_40_SF <- it_gadm_40_SF %>%
+  left_join(it_inhabitants_2024_CV, by = "NAME_1")
+
+# check missing data now is 0
+missing_data <- it_gadm_40_SF %>%
+  filter(is.na(inhabitants))  
+
+missing_data$NAME_1
+
+# Split again
+it_gadm_40_SF$inhabitants_binned <- discretize(
+  it_gadm_40_SF$inhabitants,
+  method = "interval",
+  breaks = 8
+)
+
+```
+
+
+
+```{r}
+ggplot(data = it_gadm_40_SF) +
+  geom_sf(aes(fill = inhabitants_binned), color = "black", lwd = 0.2) +
+  scale_fill_viridis_d(name = "Inhabitants (Binned)") + 
+  theme_minimal() +
+  labs(title = "Italy Regions by Discretized Inhabitants", 
+       caption = "Source: ISTAT 2024") +
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),
+    legend.position = "right"
+  )
+```
+
+## Map of municipalities
+
+Repeat the same procedure used in the previous Section with the file italy_istat2024_surface.csv relative to the surfaces of the Italian regions.
+
+Discretize the data using 10 bins.
+Plot a map of Italy with the regions colored according to the former discretization.
+
+```{r}
+#CSV file
+it_surfaces_2024_CV <- read.csv("data/italy_istat2024_surfaces.csv")
+
+it_surfaces_2024_CV
+```
+```{r}
+it_surfaces_2024_CV <- it_surfaces_2024_CV %>%
+  rename(NAME_1 = region)  
+names(it_surfaces_2024_CV)
+
+it_gadm_40_SF <- it_gadm_40_SF %>%
+  left_join(it_surfaces_2024_CV, by = "NAME_1")
+
+# delete the id, because it is useless for data analysis
+it_gadm_40_SF <- it_gadm_40_SF %>%
+  select(-id)
+
+```
+
+```{r}
+it_gadm_40_SF
+```
+```{r}
+it_gadm_40_SF$surfaces_binned <- discretize(
+  it_gadm_40_SF$surfaces,
+  method = "interval",
+  breaks = 10
+)
+
+# check the 8 bins
+table(it_gadm_40_SF$surfaces_binned)
+```
+```{r}
+# Check the plot I find there is a NAN in Valle d'Aosta, so I should deal with it.
+missing_data <- it_gadm_40_SF %>%
+  filter(is.na(surfaces))  
+
+missing_data$NAME_1
+
+table(stri_enc_mark(it_gadm_40_SF$NAME_1))  
+table(stri_enc_mark(it_surfaces_2024_CV$NAME_1))
+
+# one of ASCII and another is native
+it_gadm_40_SF$NAME_1 <- iconv(it_gadm_40_SF$NAME_1, from = "", to = "UTF-8")
+it_surfaces_2024_CV$NAME_1 <- iconv(it_surfaces_2024_CV$NAME_1, from = "", to = "UTF-8")
+
+
+# make the native to the UTF-8 and check
+table(stri_enc_mark(it_gadm_40_SF$NAME_1))  
+table(stri_enc_mark(it_surfaces_2024_CV$NAME_1))  
+
+```
+```{r}
+# it still has difference
+setdiff(it_gadm_40_SF$NAME_1, it_surfaces_2024_CV$NAME_1)
+setdiff(it_surfaces_2024_CV$NAME_1, it_gadm_40_SF$NAME_1)
+
+# check the punctuation ' and then I see the difference in c2 a0
+charToRaw(setdiff(it_gadm_40_SF$NAME_1, it_surfaces_2024_CV$NAME_1))  
+charToRaw(setdiff(it_surfaces_2024_CV$NAME_1, it_gadm_40_SF$NAME_1)) 
+
+# deal with c2 a0 as common
+it_surfaces_2024_CV$NAME_1 <- gsub("\u00A0", " ", it_surfaces_2024_CV$NAME_1)
+
+
+# Then regenerate as before but consider remove the previous inhabitants column, it will influence the bins outcome 
+it_gadm_40_SF <- it_gadm_40_SF %>%
+  select(-surfaces)
+
+it_gadm_40_SF <- it_gadm_40_SF %>%
+  left_join(it_surfaces_2024_CV, by = "NAME_1")
+
+# check missing data now is 0
+missing_data <- it_gadm_40_SF %>%
+  filter(is.na(surfaces))  
+
+missing_data$NAME_1
+
+# Split again
+it_gadm_40_SF$surfaces_binned <- discretize(
+  it_gadm_40_SF$surfaces,
+  method = "interval",
+  breaks = 8
+)
+
+```
+
+
+```{r}
+ggplot(data = it_gadm_40_SF) +
+  geom_sf(aes(fill = surfaces_binned), color = "black", lwd = 0.2) +
+  scale_fill_viridis_d(name = "Surfaces (Binned)") + 
+  theme_minimal() +
+  labs(title = "Italy Regions by Discretized Surfaces", 
+       caption = "Source: ISTAT 2024") +
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),
+    legend.position = "right"
+  )
+```
+## GRDP vs municipalities
+
+Load the datasets italy_istat2024_grdp.csv and italy_istat2024_municipalities.csv relative to the gross regional domestic product(DRDP) and the amount of municipalities, respectively.
+
+```{r}
+#CSV file
+it_grdp_2024_CV <- read.csv("data/italy_istat2024_grdp.csv")
+it_municipalities_2024_CV <- read.csv("data/italy_istat2024_municipalities.csv")
+
+head(it_grdp_2024_CV)
+head(it_municipalities_2024_CV)
+```
+
+```{r}
+it_grdp_2024_CV <- it_grdp_2024_CV %>%
+  left_join(it_municipalities_2024_CV, by = "region")
+it_grdp_2024_CV <- it_grdp_2024_CV %>%
+  select(-id.y)
+it_grdp_2024_CV <- it_grdp_2024_CV %>%
+  select(-id.x)
+```
+```{r}
+head(it_grdp_2024_CV)
+```
+
+Produce a scatter plot (square symbols, green color) with the amount of municipalities on the x-axis and the grdp on the y-axis.
+```{r}
+ggplot(it_grdp_2024_CV, aes(x = municipalities, y = grdp)) + 
+  geom_point(shape = 15, color = "green") +  
+  labs(title = "Scatter Plot of Municipalities vs GRDP",
+       x = "Number of Municipalities",
+       y = "GRDP") +
+  theme_bw()
+```
+Does the plot display any trend (linear) between the x and y variables?
+
+No, it dosen't. There is not any trend between the x and y variables.
+
+Perform a linear regression between the x and y variables and comment about the output of the test (use the instruction summary()).
+
+```{r}
+
+lm_model <- lm(grdp ~ municipalities, data = it_grdp_2024_CV)
+
+summary(lm_model)
+```
+```{r}
+cat("The coefficient of municipalities has a p-value of 0.332, which indicates that the variable is not significant at the 0.05 significance level. We cannot confidently say that there is a significant relationship between the number of municipalities and GRDP.\n")
+cat("\n")
+cat("The R-squared value is 0.05239 and the Adjusted R-squared is -0.0002545, which indicates that the model fit is very low. Generally, the closer to 1, the better the fit.\n")
+```
+## GRDP vs density of inhabitants
+
+Load the datasets italy_istat2024_grdp.csv and italy_istat2024_density.csv relative to the gross regional domestic product and the density of inhabitants per kmˆ2., respectively.
+
+```{r}
+#CSV file
+it_grdp_2024_CV <- read.csv("data/italy_istat2024_grdp.csv")
+it_density_2024_CV <- read.csv("data/italy_istat2024_density.csv")
+
+head(it_grdp_2024_CV)
+head(it_density_2024_CV)
+```
+```{r}
+it_grdp_2024_CV <- it_grdp_2024_CV %>%
+  left_join(it_density_2024_CV, by = "region")
+it_grdp_2024_CV <- it_grdp_2024_CV %>%
+  select(-id.y)
+it_grdp_2024_CV <- it_grdp_2024_CV %>%
+  select(-id.x)
+```
+```{r}
+head(it_grdp_2024_CV)
+```
+Produce a scatter plot (square symbols, green color) with the amount of density of inhabitants on the x-axis and the grdp on the y-axis.
+
+```{r}
+ggplot(it_grdp_2024_CV, aes(x = density, y = grdp)) + 
+  geom_point(shape = 15, color = "green") +  
+  labs(title = "Scatter Plot of Density vs GRDP",
+       x = "Number of Density",
+       y = "GRDP") +
+  theme_bw()
+```
+
+Does the plot display any trend (linear) between the x and y variables?
+
+Yes, but not very significant and I should be a positive trend.
+
+Perform a linear regression between the x and y variables and comment about the output of the test (use the instruction summary()).
+Comment on the residuals of the linear fit.
+
+```{r}
+lm_model2 <- lm(grdp ~ density, data = it_grdp_2024_CV)
+
+summary(lm_model2)
+```
+```{r}
+residuals <- lm_model2$residuals
+residuals
+
+residuals_df <- data.frame(Index = seq_along(residuals), Residuals = residuals)
+
+ggplot(residuals_df, aes(x = Index, y = Residuals)) +
+  geom_point(color = "lightblue") +  
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed") +  
+  labs(title = "Residuals of Linear Fit", x = "Index", y = "Residuals") +  
+  theme_bw()
+```
+
+```{r}
+cat("mean of residual: ", mean(residuals_df$Residuals))
+cat("\n")
+cat("max of residual: ", max(residuals_df$Residuals))
+cat("\n")
+cat("min of residual: ", min(residuals_df$Residuals))
+cat("\n")
+cat("The mean of the residual is indeed close to 0, but the maximum and minimum values of the residual (very large absolute values) indicate that the model's prediction is far from the actual value. The combined R-squared and Adjusted R-squared indicate that the model is not well fitted.")
+
+```
+## GRDP vs unknown variable
+
+Load the datasets italy_istat2024_grdp.csv and italy_istat2024_unknown.csv relative to the gross regional domestic product and an unknown quantity (to discover), respectively.
+
+```{r}
+#CSV file
+it_grdp_2024_CV <- read.csv("data/italy_istat2024_grdp.csv")
+it_unknown_2024_CV <- read.csv("data/italy_istat2024_unknown.csv")
+
+head(it_grdp_2024_CV)
+head(it_unknown_2024_CV)
+```
+```{r}
+it_grdp_2024_CV <- it_grdp_2024_CV %>%
+  left_join(it_unknown_2024_CV, by = "region")
+it_grdp_2024_CV <- it_grdp_2024_CV %>%
+  select(-id.y)
+it_grdp_2024_CV <- it_grdp_2024_CV %>%
+  select(-id.x)
+```
+```{r}
+head(it_grdp_2024_CV)
+```
+Produce a scatter plot (square symbols, green color) with the grdp on the x-axis and the unknown variable on the y-axis.
+
+```{r}
+ggplot(it_grdp_2024_CV, aes(x = grdp, y = x)) + 
+  geom_point(shape = 15, color = "green") +  
+  labs(title = "Scatter Plot of Unknown vs GRDP",
+       x = "GDPR",
+       y = "Unknown") +
+  theme_bw()
+```
+
+Does the plot display any trend (linear) between the x and y variables?
+
+Yes, it is a very significant positive relationship between the x and y variables.
+
+Perform a linear regression between the x and y variables and comment about the output of the test (use the instruction summary()).
+Based on the previous results, can we conclude that the unknown variable is simply the grdp in another value (which one, in case)?
+
+```{r}
+lm_model3 <- lm(x ~ grdp, data = it_grdp_2024_CV)
+
+summary(lm_model3)
+```
+```{r}
+it_grdp_2024_CV$x/it_grdp_2024_CV$grdp
+it_grdp_2024_CV$grdp/it_grdp_2024_CV$x
+
+cat("\n")
+cat("Yes, from the division between x and grdp, we can see that the multiple between x and grdp is constant, so it can be considered that x is just a magnification of the grdp data.")
+```
+

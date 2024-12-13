@@ -1,0 +1,647 @@
+---
+title: "assignment 5"
+author: "wang yuhang"
+date: "2024-11-08"
+output:
+  word_document:
+    toc: true
+    number_sections: true
+  pdf_document:
+    toc: true
+  html_document:
+    toc: true
+    number_sections: true
+    df_print: paged
+---
+# Assignment 05
+
+Introduction to the case study
+
+The ear_maize.csv case study (file=“ear_maize.csv”) originally concerns ears of corn from maize plants of a certain genetic line obtained by genetic crossing. Each observation refers to an ear of corn taken from a distinct plant. In the following table the list of considered variables is shown.
+
+Variable
+Description
+
+PROT
+protein content in 50 kernels (g)
+
+ANTOT
+anthocyanin content in 50 caryopsis (g)
+
+PESS50
+dry weight 50 caryopsis
+
+CARRAN
+number of caryopsis per rank (g)
+
+NSPI
+number of ears of corn per plant
+
+NRAN
+number of ranks
+
+VIGVE
+vegetative vigor (LOW, MEDIUM, HIGH)
+
+PARA
+presence (1) or absence (0) of parasites
+
+TIL
+presence (1) or absence (0) of second germination branches (tillers)
+
+The file ear_maize.csv contains all complete data. In case of doubts, please check the R help, for example, in the console:
+
+
+Exercises
+
+In what follows, you should use the ggplot2 R package for visualization and prefer tibbles in the tidyverse instead of basic dataframes.
+
+## E00
+
+Import the dataframe from the file “ear_maize.csv” and call it cornTB; you may want to exploit the read_csv function from the readr package, or use the RStudio IDE. Show the size of imported data and variable names.
+
+```{r}
+cornTB <- read.csv("data/ear_maize.csv")
+head(cornTB)
+```
+
+## E01
+
+1. Calculate the distribution of relative frequencies for the variable CARRAN, and build a barplot for them with light grey within and black around each bar. Put CARRAN as the name of the horizontal axis and “Rel. Freq.” on the vertical axis. The title should be “Barplot of relative frequency values”.
+
+2. Plot the ECDF of this variable, with red color for the resulting line.
+```{r}
+library(ggplot2)
+CARRAN_nu <- cornTB$CARRAN
+CARRAN_counts <- table(CARRAN_nu)
+CARRAN_rf <- CARRAN_counts/sum(CARRAN_counts)
+CARRAN_freq <- data.frame(CARRAN = names(CARRAN_counts), 
+                            Freq = as.vector(CARRAN_rf))
+
+ggplot(CARRAN_freq, aes(x = CARRAN, y = Freq)) +
+  geom_bar(stat = "identity", fill = "lightgrey", color = "black", width = 0.6) + 
+  scale_y_continuous(limits = c(0,0.5)) +
+  labs(title = "Barplot of Relative Frequencies of CARRAN", x = "CARRAN", y = "Rel. Freq.")+ 
+  theme(panel.background = element_rect(fill = "white"))
+```
+
+```{r}
+ggplot(cornTB, aes(x = CARRAN)) +
+  stat_ecdf(geom = "step", color = "red") +  
+  labs(title = "ECDF of CARRAN", x = "Values", y = "ECDF") +  
+  theme_minimal()  
+```
+
+## E02
+
+Obtain the same tables and graphs as in E01 points (1) and (2), but here for variable NSPI.
+
+```{r}
+NSPI_nu <- cornTB$NSPI
+
+NSPI_counts <- table(NSPI_nu)
+NSPI_rf <- NSPI_counts/sum(NSPI_counts)
+
+NSPI_freq <- data.frame(NSPI = names(NSPI_counts), 
+                            Freq = as.vector(NSPI_rf))
+
+ggplot(NSPI_freq, aes(x = NSPI, y = Freq)) +
+  geom_bar(stat = "identity", fill = "lightgrey", color = "black", width = 0.6) +
+  scale_y_continuous(limits = c(0,0.5)) +
+  labs(title = "Barplot of Relative Frequencies of NSPI", x = "NSPI", y = "Rel. Freq.")+ 
+  theme(panel.background = element_rect(fill = "white"))
+```
+```{r}
+ggplot(cornTB, aes(x = NSPI)) +
+  stat_ecdf(geom = "step", color = "red") +  
+  labs(title = "ECDF of NSPI", x = "Values", y = "ECDF") +  
+  theme_minimal()  
+```
+
+## E03
+
+Obtain the same tables and graphs as in E01 point (1) but here for variable NRAN. Reduce the size of bars on the horizontal axis to the default size.
+
+```{r}
+NRAN_nu <- cornTB$NRAN
+
+NRAN_counts <- table(NRAN_nu)
+
+NRAN_rf <- NRAN_counts/sum(NRAN_counts)
+
+NRAN_freq <- data.frame(NRAN = names(NRAN_counts), 
+                            Freq = as.vector(NRAN_rf))
+
+ggplot(NRAN_freq, aes(x = NRAN, y = Freq)) +
+  geom_bar(stat = "identity", fill = "lightgrey", color = "black") + 
+  labs(title = "Barplot of Relative Frequencies of NSPI", x = "NRAN", y = "Rel. Freq.")+ 
+  theme(panel.background = element_rect(fill = "white"))
+```
+
+## E04
+
+Calculate the distribution (a table) of relative frequencies for the variable vegetative vigor (VIGVE) conditional on parasites (PARA). Note: within each PARA subgroup relative frequencies add to one.
+
+Build a barplot where frequencies of the same value of VIGVE given different PARA are “dodged” nearby, for each value of VIGVE. Set the order of VIGVE values to “LOW,MEDIUM,HIGH”. Label on the horizontal axis “Vegetative vigor”. Label on the vertical axis “Relative frequencies”. The title is “Conditional Distribution given PARA”. Use the fill brewer “Pastel3”, which is based on green. Keep the automatic legend on the right for PARA.
+
+```{r}
+library(tidyverse)
+
+VIGVE_nu <- cornTB$VIGVE
+#split by PARA
+cornTB_split <- split(VIGVE_nu, list(cornTB$PARA), drop = TRUE)
+
+cornTB_count_PARA0 <- table(cornTB_split[1])
+
+cornTB_rf_PARA0 <- cornTB_count_PARA0/sum(cornTB_count_PARA0)
+cornTB_rf_PARA0
+
+cornTB_count_PARA1 <- table(cornTB_split[2])
+
+cornTB_rf_PARA1 <- cornTB_count_PARA1/sum(cornTB_count_PARA1)
+cornTB_rf_PARA1
+
+C_PARA_tibble <- tibble::tibble(
+  VIGVEName = c("HIGH", "LOW", "MEDIUM"),
+  cornTB_rf_PARA0,
+  cornTB_rf_PARA1)
+C_PARA_tibble
+```
+```{r}
+#exchange rows
+C_PARA_tibble_change <- C_PARA_tibble[c(2, 3, 1), ]
+
+data <- data.frame(
+  VIGVE = factor(c("LOW","MEDIUM", "HIGH"), levels = c("LOW", "MEDIUM", "HIGH")),
+  PARA = factor(c("0", "0", "0", "1", "1", "1")),
+  Frequency = c(C_PARA_tibble_change$cornTB_rf_PARA0,C_PARA_tibble_change$cornTB_rf_PARA1)
+)
+
+# Plot the barplot with relative frequencies, dodge the bars, and customize the color palette
+ggplot(data, aes(x = VIGVE, y = Frequency, fill = PARA)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_brewer(palette = "Pastel3") +
+  labs(
+    x = "Vegetative vigor",
+    y = "Relative frequencies",
+    title = "Conditional Distribution given PARA"
+  ) +
+  theme_minimal() +  
+  theme(legend.position = "right")  # Keep the legend on the right
+```
+
+## E05
+
+Calculate the distribution (a table) of relative frequencies for the variable vegetative vigor (VIGVE) conditional on tillage (TIL). Note: within each TIL subgroup relative frequencies add to one.
+
+Build a barplot where frequencies of the same value of VIGVE given different TIL are “dodged” nearby, for each value of VIGVE. Set the order of VIGVE values to “LOW,MEDIUM,HIGH”. Label on the horizontal axis “Vegetative vigor”. Label on the vertical axis “Relative frequencies”. The title is “Conditional distribution given TIL”. Use the fill brewer “Pastel1”, which is based on green. Keep the automatic legend on the right for TIL
+
+```{r}
+VIGVE_nu <- cornTB$VIGVE
+#split by TIL
+cornTB_split <- split(VIGVE_nu, list(cornTB$TIL), drop = TRUE)
+
+cornTB_count_TIL0 <- table(cornTB_split[1])
+
+cornTB_rf_TIL0 <- cornTB_count_TIL0/sum(cornTB_count_TIL0)
+cornTB_rf_TIL0
+
+cornTB_count_TIL1 <- table(cornTB_split[2])
+
+cornTB_rf_TIL1 <- cornTB_count_TIL1/sum(cornTB_count_TIL1)
+cornTB_rf_TIL1
+
+C_TIL_tibble <- tibble::tibble(
+  VIGVEName = c("HIGH", "LOW", "MEDIUM"),
+  cornTB_rf_TIL0,
+  cornTB_rf_TIL1)
+C_TIL_tibble
+```
+```{r}
+#exchange rows
+C_TIL_tibble_change <- C_TIL_tibble[c(2, 3, 1), ]
+C_TIL_tibble_change
+
+data2 <- data.frame(
+  VIGVE = factor(c("LOW","MEDIUM", "HIGH"), levels = c("LOW", "MEDIUM", "HIGH")),
+  TIL = factor(c("0", "0", "0", "1", "1", "1")),
+  Frequency = c(C_TIL_tibble_change$cornTB_rf_TIL0,C_TIL_tibble_change$cornTB_rf_TIL1)
+)
+
+# Plot the barplot with relative frequencies, dodge the bars, and customize the color palette
+ggplot(data2, aes(x = VIGVE, y = Frequency, fill = TIL)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_brewer(palette = "Pastel1") +
+  labs(
+    x = "Vegetative vigor",
+    y = "Relative frequencies",
+    title = "Conditional Distribution given TIL"
+  ) +
+  theme_minimal() + 
+  theme(legend.position = "right")  
+```
+
+## E06
+
+Calculate the five-number summary (well, they are six summaries) for variables: PROT, ANTOT and PESS50. Build an histogram of relative frequencies for each variable with 23 intervals on the horizontal axis, black-and-white theme, fill color orange and brown borders. Add a layer with the kernel density estimate of the probability density function, where transparency is equal to , and the color for the area below the estimated pdf is azure.
+
+```{r}
+cornTB <- as_tibble(cornTB)
+cornTB
+PROTTB <- cornTB$PROT
+ANTOTTB <- cornTB$ANTOT
+PESS50TB <- cornTB$PESS50
+
+cat("PROT:\n")
+summary(PROTTB)
+cat("ANTOT:\n")
+summary(ANTOTTB)
+cat("PESS50:\n")
+summary(PESS50TB)
+
+```
+```{r}
+ggplot(cornTB, aes(x = PROT)) +
+  geom_histogram(aes(y = after_stat(density)),  # relative frequencies
+                 bins = 23,  
+                 fill = "orange",       
+                 color = "brown") +     
+  geom_density(aes(y =  after_stat(density)),    
+               fill = "azure",          
+               alpha = 0.5) +           
+  theme_bw() +                          # black and white
+  labs(title = "Histogram with PROT",
+       x = "Value",
+       y = "Density")                   
+```
+```{r}
+ggplot(cornTB, aes(x = ANTOT)) +
+  geom_histogram(aes(y = after_stat(density)),  # relative frequencies
+                 bins = 23,  
+                 fill = "orange",       
+                 color = "brown") +     
+  geom_density(aes(y =  after_stat(density)),    
+               fill = "azure",          
+               alpha = 0.5) +           
+  theme_bw() +                          # black and white
+  labs(title = "Histogram with ANTOT",
+       x = "Value",
+       y = "Density")  
+```
+```{r}
+ggplot(cornTB, aes(x = PESS50)) +
+  geom_histogram(aes(y = after_stat(density)),  # relative frequencies
+                 bins = 23,  
+                 fill = "orange",       
+                 color = "brown") +     
+  geom_density(aes(y =  after_stat(density)),    
+               fill = "azure",          
+               alpha = 0.5) +           
+  theme_bw() +                          # black and white
+  labs(title = "Histogram with PESS50",
+       x = "Value",
+       y = "Density")  
+```
+
+## E07
+
+From the E06, consider the variables PROT, ANTOT and PESS50. For each variable, build a boxplot given PARA, where the width of boxes is 0.61 of the default size. Add a jittering of the original points with transparency (alpha) equal to , point size , width and blue color. The inner area of each box should be orange.
+
+```{r}
+
+ggplot(cornTB, aes(x = PARA, y = PROT, group = PARA)) +
+  geom_boxplot(width = 0.61, fill = "orange", color = "black") +  
+  geom_jitter(width = 0.2, size = 0.5, alpha = 0.4,col="blue") +  
+  facet_wrap(~ PARA, scales = "free") +    
+  labs(title = "Boxplot of PROT given PARA",
+       x = "PARA",
+       y = "Values") +
+  theme_minimal()
+
+```
+
+```{r}
+ggplot(cornTB, aes(x = PARA, y = ANTOT, group = PARA)) +
+  geom_boxplot(width = 0.61, fill = "orange", color = "black") +  
+  geom_jitter(width = 0.2, size = 0.5, alpha = 0.4,col="blue") +  
+  facet_wrap(~ PARA, scales = "free") +    
+  labs(title = "Boxplot of ANTOT given PARA",
+       x = "PARA",
+       y = "Values") +
+  theme_minimal()
+```
+```{r}
+ggplot(cornTB, aes(x = PARA, y = PESS50, group = PARA)) +
+  geom_boxplot(width = 0.61, fill = "orange", color = "black") +  
+  geom_jitter(width = 0.2, size = 0.5, alpha = 0.4,col="blue") +  
+  facet_wrap(~ PARA, scales = "free") +    
+  labs(title = "Boxplot of PESS50 given PARA",
+       x = "PARA",
+       y = "Values") +
+  theme_minimal()
+```
+
+## E08
+
+Replicate the graphs in E07 by substituting PARA with TIL Specify on the horizontal axis the meaning of such variable by defining a suitable label.
+
+```{r}
+ggplot(cornTB, aes(x = TIL, y = PROT, group = TIL)) +
+  geom_boxplot(width = 0.61, fill = "orange", color = "black") +  
+  geom_jitter(width = 0.2, size = 0.5, alpha = 0.4,col="blue") +  
+  facet_wrap(~ TIL, scales = "free") +    
+  labs(title = "Boxplot of PROT given TIL",
+       x = "TIL",
+       y = "Values of PROT") +
+  theme_minimal()
+```
+```{r}
+ggplot(cornTB, aes(x = TIL, y = ANTOT, group = TIL)) +
+  geom_boxplot(width = 0.61, fill = "orange", color = "black") +  
+  geom_jitter(width = 0.2, size = 0.5, alpha = 0.4,col="blue") +  
+  facet_wrap(~ TIL, scales = "free") +    
+  labs(title = "Boxplot of ANTOT given TIL",
+       x = "TIL",
+       y = "Values of ANTOT") +
+  theme_minimal()
+```
+```{r}
+ggplot(cornTB, aes(x = TIL, y = PESS50, group = TIL)) +
+  geom_boxplot(width = 0.61, fill = "orange", color = "black") +  
+  geom_jitter(width = 0.2, size = 0.5, alpha = 0.4,col="blue") +  
+  facet_wrap(~ TIL, scales = "free") +    
+  labs(title = "Boxplot of PESS50 given TIL",
+       x = "TIL",
+       y = "Values of PESS50") +
+  theme_minimal()
+```
+
+## E09
+
+Consider E06 and the variable ANTOT. Show a kernel density estimate of the probability density function given PARA using faceting to obtain two graphs side by side.
+
+```{r}
+ggplot(cornTB, aes(x = ANTOT)) +
+  geom_histogram(aes(y = after_stat(density)),  # relative frequencies
+                 bins = 23,  
+                 fill = "orange",       
+                 color = "brown") +     
+  geom_density(aes(y =  after_stat(density)),    
+               fill = "azure",          
+               alpha = 0.5) +
+  facet_wrap(~ PARA, scales = "free") +
+  theme_bw() +                        
+  labs(title = "Histogram with ANTOT",
+       x = "Value",
+       y = "Density") 
+```
+
+## E10
+
+Build a two-way density plot with original points overlapped for variable ANTOT and PROT. Select transparency to 0.25 and a point size 5 times smaller than the default size.
+
+```{r}
+ggplot(cornTB, aes(x = ANTOT, y = PROT)) +
+  geom_density_2d() +
+  geom_point(size = 0.2, alpha = 0.25) +
+  labs(title = "Two-Way Density Plot Overlapped With Original Points",
+       x = "ANTOT",
+       y = "PROT") +
+  theme_minimal()
+```
+
+## E11
+
+1. Consider the two variables ANTOT (Y) and PROT (X). Build a scatterplot of these two variables by faceting with respect to PARA and VIGVE. Please use transparency and point size ; the plotted character should be an empty quadrat, and the filling color should be red or blue according to the value taken by variable TIL (alpha=0.5, plotted size 0.85).
+
+2. Save the resulting plot at 300 dpi, with 12 cm and filename “E11_gg.png”.
+
+```{r}
+ggplot(cornTB, aes(x = PROT, y = ANTOT, fill = factor(TIL))) +
+  geom_point(shape = 22, size = 0.85, alpha = 0.5) +
+  scale_fill_manual(values = c("1" = "blue", "0" = "red")) +
+  facet_wrap(~ PARA + VIGVE, scales = "free") +
+  labs(title = "Scatter Plot",
+       x = "ANTOT",
+       y = "PROT") +
+  theme_minimal()
+
+
+```
+```{r}
+ggplot(cornTB, aes(x = PROT, y = ANTOT, fill = factor(TIL))) +
+  geom_point(shape = 22, size = 0.85, alpha = 0.5) +
+  scale_fill_manual(values = c("1" = "blue", "0" = "red")) +
+  facet_wrap(~ PARA + VIGVE, scales = "free") +
+  labs(title = "Scatter Plot",
+       x = "ANTOT",
+       y = "PROT") +
+  theme_minimal()
+
+ggsave("images/E11_gg.png", dpi = 300, width = 12, units = "cm")
+```
+
+## E12
+
+Consider E11 and add a smooth local regression line (color blue) onto plots at point (1).
+
+```{r}
+ggplot(cornTB, aes(x = PROT, y = ANTOT, fill = factor(TIL))) +
+  geom_point(shape = 22, size = 0.85, alpha = 0.5) +
+  scale_fill_manual(values = c("1" = "blue", "0" = "red")) +
+  facet_wrap(~ PARA + VIGVE, scales = "free") +
+  labs(title = "Scatter Plot",
+       x = "ANTOT",
+       y = "PROT") +
+  theme_minimal() +
+  geom_smooth(data = subset(cornTB), aes(x = PROT, y = ANTOT), 
+              method = "loess", color = "blue", se = FALSE) 
+```
+
+## E13
+
+1. Consider the two variables ANTOT (Y) and PROT (X). Fit a frequentist regression model using lm where the response is ANTOT, and the explanatory variables are PROT, PARA, TIL, and VIGVE. In particular, you should fit the following six models:
+
+M1: ANTOT ~ PROT + PARA + TIL + VIGVE
+
+M2: ANTOT ~ PROT + PARA + TIL + VIGVE + PARA:TIL + PARA:VIGVE +TIL:VIGVE
+
+M3: ANTOT ~ PROT + PARA * TIL * VIGVE
+
+M4: ANTOT ~ PROT + PARA + VIGVE  
+
+M5: ANTOT ~ PROT+VIGVE
+
+M6: ANTOT ~ PROT
+
+
+```{r}
+M1 <- lm(ANTOT ~  PROT + PARA + TIL + VIGVE, data = cornTB)
+M2 <- lm(ANTOT ~  PROT + PARA + TIL + VIGVE + PARA:TIL + PARA:VIGVE +TIL:VIGVE, data = cornTB)
+M3 <- lm(ANTOT ~  PROT + PARA * TIL * VIGVE, data = cornTB)
+M4 <- lm(ANTOT ~  PROT + PARA + VIGVE, data = cornTB)
+M5 <- lm(ANTOT ~  PROT+VIGVE, data = cornTB)
+M6 <- lm(ANTOT ~  PROT, data = cornTB)
+summary(M1)
+summary(M2)
+summary(M3)
+summary(M4)
+summary(M5)
+summary(M6)
+
+```
+
+2. Select the best model according to the Bayesian Information Criterion and print such model formula.
+
+```{r}
+# According BIC: lower ~ better
+bic_values <- BIC(M1, M2, M3, M4, M5, M6)
+
+# find the index of the smallest BIC vaules
+best_model_index <- which.min(bic_values$BIC)
+list_M <- list(M1, M2, M3, M4, M5, M6)
+best_model <-list_M[best_model_index]
+class(best_model)
+#best_model
+cat("The best model according to BIC is:\n")
+print(formula(best_model[[1]]))
+```
+
+3. Obtain the residuals and build a quantite-quantile plot with reference line made by a Gaussian (Normal) distribution (color red, double width, dashed-dotted).
+
+```{r}
+S_M5 <- summary(M5)
+
+ggplot(data.frame(x = S_M5$residuals), aes(sample = x)) +
+  stat_qq() + 
+  ggtitle("quantite-quantile plot for the residuals in best model") +
+  stat_qq_line(distribution = qnorm, color = "red", linewidth = 2, linetype = "dashed") 
+
+ggplot(data.frame(x = S_M5$residuals), aes(sample = x)) +
+  stat_qq() + 
+  ggtitle("quantite-quantile plot for the residuals in best model") +
+  stat_qq_line(distribution = qnorm, color = "red", linewidth = 2, linetype = "dotted")  
+
+```
+
+## E14
+
+Create the tibble cornTB2 made by observations where VIGVE = “LOW”, PARA=0 and TIL = 1. Build a baloon plot to represent the variable ANTOT given NSPI on the horizontal axis and CARRAN on the vertical axis. Baloons should be filled with orange color, the shape should be an empty circle whose perimeter is black, and the maximum size of each area should be .
+
+```{r}
+cornTB2 <- cornTB %>% filter(VIGVE == "LOW", PARA == 0, TIL == 1)
+cornTB2
+```
+```{r}
+#ANTOT given NSPI: It means I want to see the distributions of ANTOT in conditional NSPI, so put the condition into the x axis.
+ggplot(cornTB2, aes(x = NSPI, y = CARRAN, size = ANTOT)) +
+    geom_point(
+    shape = 21,                     
+    color = "black",               
+    fill = "orange", 
+    alpha = 0.7,
+    stroke = 1                     
+  ) +
+  scale_size_continuous(range = c(min(cornTB2$ANTOT)/3,max(cornTB2$ANTOT)/2)) + 
+  theme_minimal() +
+  ggtitle("Balloon Plot of ANTOT given NSPI and CARRAN") +
+  xlab("NSPI") +
+  ylab("CARRAN") + 
+  theme(legend.position = "none")
+```
+
+## E15
+
+Build a violin plot for variable ANTOT given CARRAN. Plot on the horizontal and vertical axes labels that explain what these variables represent. Overlay a boxplot with brown outliers (extreme values) whose
+transparency is 0.5 and point size 2. Azure square points indicate arithmetic means.
+
+```{r}
+# Keeping all data by drop = FALSE but cannot compute density for groups with fewer than two data points
+# I use cornTB because cornTB2 has some groups have only one data.
+ 
+ggplot(cornTB, aes(x = as.factor(CARRAN), y = ANTOT)) +
+  geom_violin(trim = TRUE, fill = "lightblue", color = "black", drop = FALSE) +  
+  geom_boxplot(width = 0.1, outlier.colour = "brown", outlier.shape = 16, outlier.size = 2, 
+               outlier.alpha = 0.5, color = "black") +  
+  stat_summary(fun = mean, geom = "point", shape = 15, size = 3, color = "azure") + 
+  scale_y_continuous(limits = c(0, 25))+
+  labs(
+    title = "Violin Plot of ANTOT given CARRAN",
+    x = "CARRAN",
+    y = "ANTOT"
+  ) +
+  theme_minimal() +  
+  theme(legend.position = "none")  
+```
+
+## E16
+
+Build a Lollipop chart using the GGally R package.
+
+1. Build a tibble called wTB2 by selecting variables ANTOT, VIGVE,PARA and piping such tibble into the summarise function to calculate the mean value of ANTOT given VIGVE and PARA; create a new variable VIG_PA by pasting with paste0() the two variables VIGVE and PARA.
+
+```{r}
+#install.packages("dplyr")
+library(dplyr)
+
+# VIGVE is char
+wTB2 <- cornTB %>%
+  select(ANTOT, VIGVE, PARA) 
+
+# ANTOT given VIGVE and PARA
+wTB2 <- wTB2 %>%
+  group_by(VIGVE, PARA) %>%
+  summarise(
+    ANTOT_m = mean(ANTOT, na.rm = TRUE)
+  )
+
+wTB2
+```
+```{r}
+#create VIG_PA
+VIG_PA <- paste0(wTB2$VIGVE, wTB2$PARA)
+
+length(VIG_PA)
+VIG_PA
+```
+
+2. Create a Lollypop chart for ANTOT_m using wTB2 where the aesthetic has x set to VIG_PA; geom_segment work with VIG_PA and ANTOT_m; the top square points have their perimeter of color blue, and they are filled by green; names on the horizontal axis are turned to 45 degrees; the range of the vertical axis should be from 0 to 15.
+
+3. Add a thick blue vertical segment located in 6.5 on the horizontal axis, starting from the minimum and reaching the maximum of ANTOT_m.
+
+4. Add two horizontal dashed red lines with yintercept at the minimum and at the maximum of ANTOT_m.
+
+```{r}
+ggplot(wTB2, aes(x = VIG_PA, y = ANTOT_m)) +
+  geom_segment(aes(xend = VIG_PA, yend = 0), color = "grey") +
+  # 21 is hollow square and can be filled
+  geom_point(color = "blue", fill = "green", shape = 21, size = 4, stroke = 1.5) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(limits = c(0, 15)) +
+  labs(x = "VIG_PA", y = "ANTOT_m") +
+  geom_segment(aes(x = 6.5, xend = 6.5, y = min(ANTOT_m), yend = max(ANTOT_m)),
+               color = "blue", size = 2) + 
+  geom_segment(aes(x = 0, xend = 6.5, y = min(ANTOT_m), yend = min(ANTOT_m)),
+               color = "red", size = 1) +
+  geom_segment(aes(x = 0, xend = 6.5, y = max(ANTOT_m), yend = max(ANTOT_m)),
+               color = "red", size = 1)
+```
+
+## E17
+
+Using the library GGally , build a plot with all pairs of scatterplots based on the variables PROT, ANTOT, PESS50, and the kernel density estimate of the marginal distribution of each variable. The color should depend on the value of variable PARA, while the transparency should be set to .
+
+```{r}
+library(GGally)
+ggpairs(cornTB, 
+        columns = c("PROT", "ANTOT", "PESS50"),   
+        mapping = aes(color = as.factor(PARA), group = as.factor(PARA), fill = as.factor(PARA), alpha = 0.2), 
+        upper = list(continuous = "points"),        
+        lower = list(continuous = "points"),
+        legend = 1, # open legend
+        diag = list(continuous = "densityDiag"))
+
+```
+
+
+
